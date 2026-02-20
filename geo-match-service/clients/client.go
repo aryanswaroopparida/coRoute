@@ -7,12 +7,16 @@ import (
 	"sync"
 )
 
+func init() {
+	c = &Client{}
+}
+
 var (
-	c    *client
+	c    *Client
 	once sync.Once
 )
 
-type client struct {
+type Client struct {
 	MongoDB       *mongo.Client
 	MongoDBClient *mongo.Database
 	RedisClient   *redis.Client
@@ -22,8 +26,12 @@ type client struct {
 func Init() {
 	once.Do(func() {
 		initMongoDBClient()
-		initRedisClient()
+		//initRedisClient()
 	})
+}
+
+func Get() *Client {
+	return c
 }
 
 func Close(ctx context.Context) {

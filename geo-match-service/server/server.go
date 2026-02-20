@@ -32,7 +32,7 @@ func (s *GinServer) Start() {
 	log.Println("Starting Http Server")
 	conf := config.GetConfig()
 	registerRoutes(s.app)
-	log.Println("Starting Http Server on port: ", conf.Port)
+	log.Println("Starting Http Server on port:", conf.Port)
 	s.server.Addr = ":" + conf.Port
 	if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		panic("Failed to start Http Server on port: " + conf.Port + " " + err.Error())

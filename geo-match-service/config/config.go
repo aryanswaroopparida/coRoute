@@ -39,12 +39,13 @@ func LoadEnv() *Config {
 		if err := godotenv.Load(); err != nil {
 			log.Println("Error loading .env file")
 		}
-		mongoUri := getEnv("MONGO_URI", "mongodb://localhost:27017")
+		mongoUri := getEnv("MONGO_URI", "mongodb://localhost:27017/test")
 		u, err := url.Parse(mongoUri)
 		if err != nil {
 			log.Fatalf("Failed to parse MongoDB URI: %v", err)
 		}
 		dbName := u.Path[1:]
+		//log.Printf("MongoDB DB Name: %v", dbName)
 		config = Config{
 			ServiceName: getEnv("SERVICE_NAME", ""),
 			Port:        getEnv("PORT", "8080"),
