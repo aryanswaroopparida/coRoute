@@ -11,11 +11,12 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const { email, password } = await request.json();
+    console.log(email, password);
 
     if (!email || !password) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: "Invalid credentials" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     if (!isPasswordValid) {
       return NextResponse.json(
         { error: "Invalid credentials" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role },
       JWT_SECRET,
-      { expiresIn: "30d" }
+      { expiresIn: "30d" },
     );
 
     return NextResponse.json({
@@ -51,14 +52,13 @@ export async function POST(request: NextRequest) {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
       },
     });
   } catch (error) {
     console.error(error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,60 +1,34 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
+import { nitwEmailRegex } from "../lib/utils";
 
-const UserSchema = new mongoose.Schema({
+const UserSchema = new mongoose.Schema(
+  {
     name: {
-        type: String,
-        required: true,
+      type: String,
+      required: [true, "Name is required"],
+      trim: true,
     },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    password: {
-        type: String,
-        required: true,
-    },
-    phoneNumber: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    optionalPhoneNumber: {
-        type: String,
-        unique: true,
-    },
-    role: {
-        type: String,
-        enum: ['Customer', 'Seller', 'Admin'],
-        default: 'Customer',
-    },
-    address: {
-        type: [String],
-    },
-    defaultAddressIndex: {
-        type: Number,
-        default: 0,
-    },
-    cart: [{
-        product_id: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Product',
-            required: true,
-        },
-        Quantity: {
-            type: Number,
-            required: true,
-            min: 1,
-        }
-    }],
-    transaction_history: {
-        type: [mongoose.Schema.Types.ObjectId],
-        ref: 'Transaction',
-    },
-    timeStamp: {
-        type: Date,
-        default: Date.now,
-    },
-});
 
-export default mongoose.models.User || mongoose.model('User', UserSchema);
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      unique: true,
+      index: true,
+      lowercase: true,
+      trim: true,
+      match: [nitwEmailRegex, "Only NITW student emails are allowed"],
+    },
+
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+      minlength: 6,
+      // select: false,
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
+
+export default mongoose.models.User || mongoose.model("User", UserSchema);

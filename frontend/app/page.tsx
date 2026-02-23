@@ -13,7 +13,7 @@ import { AnimatedTestimonials } from "./components/animated-testimonials";
 import { Vortex } from "./components/vortex";
 // import { DottedGlowBackground } from "./components/dotted-glow-background";
 import { BackgroundLines } from "./components/background-lines";
-import { GoogleGeminiEffect } from "./components/google-gemini-effect";
+// import { GoogleGeminiEffect } from "./components/google-gemini-effect";
 import { useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 
@@ -23,10 +23,10 @@ export default function Home() {
       name: "About",
       link: "#about",
     },
-    {
-      name: "Vision",
-      link: "#vision",
-    },
+    // {
+    //   name: "Vision",
+    //   link: "#vision",
+    // },
     {
       name: "Testimonials",
       link: "#testimonials",
@@ -37,20 +37,20 @@ export default function Home() {
     },
   ];
 
-  const Cards: card[] = [
-    {
-      title: "Product 1",
-      src: "https://cdn.pixabay.com/photo/2025/11/24/11/00/burano-9973925_1280.jpg",
-    },
-    {
-      title: "Product 2",
-      src: "https://cdn.pixabay.com/photo/2025/11/24/11/00/burano-9973925_1280.jpg",
-    },
-    {
-      title: "Product 3",
-      src: "https://cdn.pixabay.com/photo/2025/11/24/11/00/burano-9973925_1280.jpg",
-    },
-  ];
+  // const Cards: card[] = [
+  //   {
+  //     title: "Product 1",
+  //     src: "https://cdn.pixabay.com/photo/2025/11/24/11/00/burano-9973925_1280.jpg",
+  //   },
+  //   {
+  //     title: "Product 2",
+  //     src: "https://cdn.pixabay.com/photo/2025/11/24/11/00/burano-9973925_1280.jpg",
+  //   },
+  //   {
+  //     title: "Product 3",
+  //     src: "https://cdn.pixabay.com/photo/2025/11/24/11/00/burano-9973925_1280.jpg",
+  //   },
+  // ];
   const words = [
     {
       text: "Think",
@@ -108,17 +108,17 @@ export default function Home() {
     },
   ];
 
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
+  // const ref = useRef(null);
+  // const { scrollYProgress } = useScroll({
+  //   target: ref,
+  //   offset: ["start end", "end start"],
+  // });
 
-  const pathLengthFirst = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
-  const pathLengthSecond = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
-  const pathLengthThird = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
-  const pathLengthFourth = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
-  const pathLengthFifth = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
+  // const pathLengthFirst = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
+  // const pathLengthSecond = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
+  // const pathLengthThird = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
+  // const pathLengthFourth = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
+  // const pathLengthFifth = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
 
   return (
     <>
@@ -178,7 +178,7 @@ export default function Home() {
         </h1>
         <GlowingEffectDemoSecond />
       </div> */}
-      <div
+      {/* <div
         id="vision"
         ref={ref}
         className="relative h-45 w-full bg-black overflow-hidden"
@@ -192,7 +192,7 @@ export default function Home() {
             pathLengthFifth,
           ]}
         />
-      </div>
+      </div> */}
       <div id="testimonials">
         <BackgroundLines className="relative flex items-center justify-center w-full flex-col px-4 overflow-hidden">
           <h2 className="bg-clip-text text-transparent text-center bg-linear-to-b from-neutral-900 to-neutral-700 dark:from-neutral-600 dark:to-white text-2xl md:text-4xl lg:text-4xl font-bold tracking-tight z-20">

@@ -56,7 +56,7 @@ func LoadEnv() *Config {
 					DBName: dbName,
 				},
 				Redis: &redis{
-					URI: getEnv("REDIS_URI", ""),
+					URI: getEnv("REDIS_URI", "http://localhost:6379"),
 				},
 			},
 		}

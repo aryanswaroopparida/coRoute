@@ -12,4 +12,5 @@ func initRedisClient() {
 		log.Println("Error in connecting to redis " + err.Error())
 	}
 	c.RedisClient = redis.NewClient(opts)
+	log.Println("Connected to redis")
 }

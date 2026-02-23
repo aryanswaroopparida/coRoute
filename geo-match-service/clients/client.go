@@ -26,7 +26,7 @@ type Client struct {
 func Init() {
 	once.Do(func() {
 		initMongoDBClient()
-		//initRedisClient()
+		initRedisClient()
 	})
 }
 

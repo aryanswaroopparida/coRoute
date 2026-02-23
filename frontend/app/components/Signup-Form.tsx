@@ -1,33 +1,110 @@
 "use client";
-import React from "react";
+
+import React, { useState, useEffect } from "react";
 import { Label } from "@/app/components/Label";
 import { Input } from "@/app/components/Input";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { nitwEmailRegex } from "../lib/utils";
 
-export default function SignupFormDemo({ login = false }: { login: Boolean }) {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+export default function SignupFormDemo({ login = false }: { login: boolean }) {
+  const router = useRouter();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [repassword, setRePassword] = useState("");
+
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [isButtonDisabled, setIsButtonDisabled] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Email validation
+  useEffect(() => {
+    if (!email) {
+      setEmailError(null);
+      return;
+    }
+
+    if (!nitwEmailRegex.test(email)) {
+      setEmailError("Only NITW student emails are allowed");
+    } else {
+      setEmailError(null);
+    }
+  }, [email]);
+
+  // Form validation
+  useEffect(() => {
+    if (login) {
+      setIsButtonDisabled(!(email && password && !emailError));
+    } else {
+      setIsButtonDisabled(
+        !(
+          name &&
+          email &&
+          password &&
+          repassword &&
+          password === repassword &&
+          !emailError
+        ),
+      );
+    }
+  }, [name, email, password, repassword, login, emailError]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Form submitted");
+
+    if (emailError) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const url = login ? "/api/auth/signin" : "/api/auth/signup";
+
+      const payload = login ? { email, password } : { name, email, password };
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        credentials: "include",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Something went wrong");
+      }
+
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
   return (
     <div className="min-h-screen w-full bg-neutral-100 dark:bg-black flex items-center justify-center px-4">
       <div className="grid w-full max-w-6xl grid-cols-1 overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-neutral-900 md:grid-cols-2">
-        {/* LEFT SIDE – Image / Branding */}
-        <div className="relative hidden md:flex items-center justify-center bg-linear-to-br from-blue-600 to-indigo-700 p-10 text-white">
+        {/* LEFT SIDE */}
+        <div className="relative hidden md:flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-700 p-10 text-white">
           <div className="relative z-10 max-w-sm space-y-6">
             <Image
               src={login ? "/logo.png" : "/logo2.png"}
               alt="CoRoute Logo"
-              width={800}
-              height={800}
+              width={300}
+              height={300}
               className={login ? "rounded-lg" : "rounded-full"}
             />
-
             <h2 className="text-3xl font-bold leading-tight">
               Travel Smarter. Share Better.
             </h2>
-
             <p className="text-white/80 text-sm leading-relaxed">
               CoRoute connects people heading to the same destination so they
               can reduce costs, lower emissions, and build smarter commuting
@@ -36,7 +113,7 @@ export default function SignupFormDemo({ login = false }: { login: Boolean }) {
           </div>
         </div>
 
-        {/* RIGHT SIDE – Form */}
+        {/* RIGHT SIDE */}
         <div className="flex items-center justify-center p-6 md:p-12">
           <div className="w-full max-w-md">
             <h2 className="text-2xl font-bold text-neutral-800 dark:text-white">
@@ -49,38 +126,42 @@ export default function SignupFormDemo({ login = false }: { login: Boolean }) {
 
             <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
               {!login && (
-                <>
-                  <div className="flex flex-col gap-4 md:flex-row">
-                    <LabelInputContainer>
-                      <Label htmlFor="firstname">First name</Label>
-                      <Input id="firstname" placeholder="John" type="text" />
-                    </LabelInputContainer>
-
-                    <LabelInputContainer>
-                      <Label htmlFor="lastname">Last name</Label>
-                      <Input id="lastname" placeholder="Doe" type="text" />
-                    </LabelInputContainer>
-                  </div>
-
-                  <LabelInputContainer>
-                    <Label htmlFor="phonenumber">Phone Number</Label>
-                    <Input
-                      id="phonenumber"
-                      placeholder="9876543210"
-                      type="number"
-                    />
-                  </LabelInputContainer>
-                </>
+                <LabelInputContainer>
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="John Doe"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </LabelInputContainer>
               )}
 
               <LabelInputContainer>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" placeholder="you@example.com" type="email" />
+                <Label htmlFor="email">NITW Email</Label>
+                <Input
+                  id="email"
+                  placeholder="as25csb1a21@student.nitw.ac.in"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value.toLowerCase())}
+                />
               </LabelInputContainer>
+
+              {emailError && (
+                <p className="text-sm text-red-500">{emailError}</p>
+              )}
 
               <LabelInputContainer>
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" placeholder="••••••••" type="password" />
+                <Input
+                  id="password"
+                  placeholder="••••••••"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
               </LabelInputContainer>
 
               {!login && (
@@ -90,16 +171,30 @@ export default function SignupFormDemo({ login = false }: { login: Boolean }) {
                     id="reenterpassword"
                     placeholder="••••••••"
                     type="password"
+                    value={repassword}
+                    onChange={(e) => setRePassword(e.target.value)}
                   />
                 </LabelInputContainer>
               )}
 
+              {!login && repassword && password !== repassword && (
+                <p className="text-sm text-red-500">Passwords do not match</p>
+              )}
+
               <button
-                className="mt-4 w-full rounded-lg bg-linear-to-br from-blue-600 to-indigo-600 py-2.5 font-semibold text-white transition hover:scale-[1.02] active:scale-[0.98]"
+                className="mt-4 w-full rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 py-2.5 font-semibold text-white transition hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 type="submit"
+                disabled={isButtonDisabled || loading}
               >
-                {login ? "Sign In" : "Create Account"} →
+                {loading
+                  ? "Processing..."
+                  : login
+                    ? "Sign In"
+                    : "Create Account"}{" "}
+                →
               </button>
+
+              {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
             </form>
           </div>
         </div>
@@ -107,15 +202,6 @@ export default function SignupFormDemo({ login = false }: { login: Boolean }) {
     </div>
   );
 }
-
-const BottomGradient = () => {
-  return (
-    <>
-      <span className="absolute inset-x-0 -bottom-px block h-px w-full bg-linear-to-r from-transparent via-cyan-500 to-transparent opacity-0 transition duration-500 group-hover/btn:opacity-100" />
-      <span className="absolute inset-x-10 -bottom-px mx-auto block h-px w-1/2 bg-linear-to-r from-transparent via-indigo-500 to-transparent opacity-0 blur-sm transition duration-500 group-hover/btn:opacity-100" />
-    </>
-  );
-};
 
 const LabelInputContainer = ({
   children,

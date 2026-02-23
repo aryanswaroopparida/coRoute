@@ -10,3 +10,5 @@ export const isMobile = () => {
   const width = window.innerWidth;
   return width <= 1024;
 };
+
+export const nitwEmailRegex = /^[a-z0-9]+@student\.nitw\.ac\.in$/;
