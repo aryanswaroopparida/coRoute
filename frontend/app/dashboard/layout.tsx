@@ -1,12 +1,5 @@
 import { Sidebar } from "@/app/components/Sidebar_Admin";
-import type { Metadata } from "next";
 import { Footer } from "@/app/components/Footer";
-
-export const metadata: Metadata = {
-  title: "John Doe - Developer",
-  description:
-    "John Doe is a developer, writer and speaker. He is a digital nomad and travels around the world while working remotely.",
-};
 
 export default function RootLayout({
   children,

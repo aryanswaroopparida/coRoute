@@ -1,17 +1,31 @@
 "use client";
-import { navlinks } from "@/app/constants/navlinks";
-import { Navlink } from "@/app/types/navlink";
+
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 import { twMerge } from "tailwind-merge";
-import { Heading } from "./Heading";
-import { socials } from "@/app/constants/socials";
-import { Badge } from "./Badge";
 import { AnimatePresence, motion } from "framer-motion";
-import { IconLayoutSidebarRightCollapse } from "@tabler/icons-react";
+import {
+  IconLayoutDashboard,
+  IconMapPin,
+  IconMessageCircle,
+  IconUser,
+  IconPlus,
+  IconSettings,
+  IconLogout,
+  IconLayoutSidebarRightCollapse,
+} from "@tabler/icons-react";
 import { isMobile } from "@/app/lib/utils";
+
+const navItems = [
+  { label: "Dashboard", href: "/dashboard", icon: IconLayoutDashboard },
+  { label: "Find Matches", href: "/dashboard/match", icon: IconMapPin },
+  { label: "My Rides", href: "/dashboard/rides", icon: IconPlus },
+  { label: "Chat", href: "/dashboard/chat", icon: IconMessageCircle },
+  { label: "Profile", href: "/dashboard/profile", icon: IconUser },
+  { label: "Settings", href: "/dashboard/settings", icon: IconSettings },
+];
 
 export const Sidebar = () => {
   const [open, setOpen] = useState(isMobile() ? false : true);
@@ -23,79 +37,69 @@ export const Sidebar = () => {
           <motion.div
             initial={{ x: -200 }}
             animate={{ x: 0 }}
-            transition={{ duration: 0.2, ease: "linear" }}
             exit={{ x: -200 }}
-            className="px-6  z-100 py-10 bg-neutral-100 max-w-56 lg:w-fit  fixed lg:relative  h-screen left-0 flex flex-col justify-between"
+            transition={{ duration: 0.2 }}
+            className="px-6 py-8 bg-white max-w-60 fixed lg:relative h-screen left-0 flex flex-col justify-between border-r"
           >
             <div className="flex-1 overflow-auto">
               <SidebarHeader />
               <Navigation setOpen={setOpen} />
             </div>
-            <div onClick={() => isMobile() && setOpen(false)}>
-              <Badge href="/admin/resume" text="Read Resume" />
+
+            {/* Logout Section */}
+            <div
+              className="flex items-center space-x-2 text-sm text-red-500 cursor-pointer hover:bg-red-50 p-2 rounded-md"
+              onClick={() => {
+                // call logout API
+              }}
+            >
+              <IconLogout className="h-4 w-4" />
+              <span>Logout</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Mobile Toggle */}
       <button
-        className="fixed lg:hidden bottom-4 right-4 h-8 w-8 border border-neutral-200 rounded-full backdrop-blur-sm flex items-center justify-center z-50"
+        className="fixed lg:hidden bottom-4 right-4 h-10 w-10 border rounded-full bg-white shadow flex items-center justify-center z-50"
         onClick={() => setOpen(!open)}
       >
-        <IconLayoutSidebarRightCollapse className="h-4 w-4 text-black" />
+        <IconLayoutSidebarRightCollapse className="h-5 w-5 text-black" />
       </button>
     </>
   );
 };
 
-export const Navigation = ({
+const Navigation = ({
   setOpen,
 }: {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const pathname = usePathname();
-
   const isActive = (href: string) => pathname === href;
 
   return (
-    <div className="flex flex-col space-y-1 my-10 relative z-100">
-      {navlinks.map((link: Navlink) => (
+    <div className="flex flex-col space-y-1 my-10">
+      {navItems.map((item) => (
         <Link
-          key={link.href}
-          href={link.href}
+          key={item.href}
+          href={item.href}
           onClick={() => isMobile() && setOpen(false)}
           className={twMerge(
-            "text-black hover:text-primary transition duration-200 flex items-center space-x-2 py-2 px-2 rounded-md text-sm",
-            isActive(link.href) && "bg-white shadow-lg text-primary"
+            "flex items-center space-x-3 py-2 px-3 rounded-lg text-sm transition",
+            isActive(item.href)
+              ? "bg-blue-50 text-blue-600 font-semibold"
+              : "hover:bg-gray-100 text-gray-700",
           )}
         >
-          <link.icon
+          <item.icon
             className={twMerge(
-              "h-4 w-4 shrink-0",
-              isActive(link.href) && "text-sky-500"
+              "h-4 w-4",
+              isActive(item.href) && "text-blue-600",
             )}
           />
-          <span className="text-black">{link.label}</span>
-        </Link>
-      ))}
-
-      <Heading as="p" className="text-sm md:text-sm lg:text-sm pt-10 px-2">
-        Socials
-      </Heading>
-      {socials.map((link: Navlink) => (
-        <Link
-          key={link.href}
-          href={link.href}
-          className={twMerge(
-            "text-black hover:text-primary transition duration-200 flex items-center space-x-2 py-2 px-2 rounded-md text-sm"
-          )}
-        >
-          <link.icon
-            className={twMerge(
-              "h-4 w-4 shrink-0",
-              isActive(link.href) && "text-sky-500"
-            )}
-          />
-          <span>{link.label}</span>
+          <span>{item.label}</span>
         </Link>
       ))}
     </div>
@@ -104,17 +108,17 @@ export const Navigation = ({
 
 const SidebarHeader = () => {
   return (
-    <div className="flex space-x-2">
+    <div className="flex items-center space-x-3">
       <Image
-        src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1760&q=80"
-        alt="Avatar"
-        height="40"
-        width="40"
-        className="object-cover object-top rounded-full shrink-0"
+        src="/profile.png" // replace with logged-in user image
+        alt="User Avatar"
+        height={40}
+        width={40}
+        className="rounded-full object-cover"
       />
-      <div className="flex text-sm flex-col">
-        <p className="font-bold text-primary">John Doe</p>
-        <p className="font-light text-black">Developer</p>
+      <div className="flex flex-col">
+        <p className="font-semibold text-sm">Swagat Parida</p>
+        <p className="text-xs text-gray-500">NIT Warangal</p>
       </div>
     </div>
   );
