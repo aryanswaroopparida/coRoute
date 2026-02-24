@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { twMerge } from "tailwind-merge";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -116,6 +116,17 @@ const Navigation = ({
 };
 
 const SidebarHeader = () => {
+  const [name, setName] = useState("");
+  useEffect(() => {
+    try {
+      (async () => {
+        const res = await fetch("/api/protected/user");
+        let jsonData = await res.json();
+        console.log("jsonData :", jsonData);
+        setName(jsonData.user.name);
+      })();
+    } catch (error) {}
+  }, []);
   return (
     <div className="flex items-center space-x-3">
       <Image
@@ -126,7 +137,7 @@ const SidebarHeader = () => {
         className="rounded-full object-cover"
       />
       <div className="flex flex-col">
-        <p className="font-semibold text-sm">Swagat Parida</p>
+        <p className="font-semibold text-sm">{name}</p>
         <p className="text-xs text-gray-500">NIT Warangal</p>
       </div>
     </div>

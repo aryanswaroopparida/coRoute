@@ -6,8 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     await dbConnect();
 
-    const { searchParams } = new URL(request.url);
-    const email = searchParams.get("email");
+    const email = request.headers.get("x-email-id");
 
     if (!email) {
       return NextResponse.json(

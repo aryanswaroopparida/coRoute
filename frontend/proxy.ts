@@ -32,6 +32,7 @@ export function proxy(request: NextRequest) {
     // Optional: Forward user info to downstream routes
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-user-id", decoded.userId);
+    requestHeaders.set("x-email-id", decoded.email);
 
     return NextResponse.next({
       request: {
