@@ -9,7 +9,7 @@ import {
   Marker,
   Autocomplete,
 } from "@react-google-maps/api";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 
 const libraries: "places"[] = ["places"];
 
@@ -25,6 +25,19 @@ export default function DashboardPage() {
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
     libraries,
   });
+
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    try {
+      (async () => {
+        const res = await fetch("/api/protected/user");
+        let jsonData = await res.json();
+        console.log("jsonData :", jsonData);
+        setEmail(jsonData.user.email);
+      })();
+    } catch (error) {}
+  }, []);
 
   const [mapCenter, setMapCenter] = useState({
     lat: 17.9689, // NITW default
@@ -45,30 +58,59 @@ export default function DashboardPage() {
     if (!autocompleteRef.current) return;
 
     const place = autocompleteRef.current.getPlace();
-
     if (!place.geometry?.location) return;
 
     const lat = place.geometry.location.lat();
     const lng = place.geometry.location.lng();
 
     setSelectedLocation({ lat, lng });
-    console.log("Destination Latutude :", lat, " Longitude :", lng);
     setMapCenter({ lat, lng });
 
-    // Call backend
-    setLoading(true);
+    // const email = "student@example.com";
 
-    const res = await fetch("/api/match/by-destination", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ latitude: lat, longitude: lng }),
-    });
+    try {
+      setLoading(true);
 
-    const data = await res.json();
-    setStudents(data || []);
-    setLoading(false);
+      // 1️⃣ Update user location in Redis
+      await fetch("/api/protected/geo/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: email.toLowerCase(),
+          latitude: lat,
+          longitude: lng,
+        }),
+      });
+
+      // 2️⃣ Fetch nearby users (5km default)
+      const res = await fetch(
+        `/api/protected/geo/nearby?lat=${lat}&lng=${lng}&radius=1`,
+      );
+
+      const data = await res.json();
+
+      // Remove self from results
+      const filtered = data.users?.filter(
+        (id: string) => id !== email.toLowerCase(),
+      );
+
+      // Map into Student format
+      const formatted: Student[] =
+        filtered?.map((id: string) => ({
+          _id: id,
+          name: id.split("@")[0],
+          destination: place.formatted_address || "Unknown",
+          distance: 0, // We'll improve this later
+        })) || [];
+
+      setStudents(formatted);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isLoaded) return <p>Loading Maps...</p>;
