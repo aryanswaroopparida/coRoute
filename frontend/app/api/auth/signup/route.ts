@@ -8,6 +8,8 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     const { name, email, password } = await request.json();
 
+    console.log(name, " ", email, " ", password);
+
     if (!name || !email || !password) {
       return NextResponse.json(
         { error: "Missing required fields" },

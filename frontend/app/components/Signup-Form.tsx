@@ -8,11 +8,16 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { nitwEmailRegex } from "../lib/utils";
 
+type Step = "details" | "otp" | "password";
+
 export default function SignupFormDemo({ login = false }: { login: boolean }) {
   const router = useRouter();
 
+  const [step, setStep] = useState<Step>("details");
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [repassword, setRePassword] = useState("");
 
@@ -35,55 +40,95 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
     }
   }, [email]);
 
-  // Form validation
+  // Button state logic
   useEffect(() => {
     if (login) {
       setIsButtonDisabled(!(email && password && !emailError));
-    } else {
-      setIsButtonDisabled(
-        !(
-          name &&
-          email &&
-          password &&
-          repassword &&
-          password === repassword &&
-          !emailError
-        ),
-      );
+      return;
     }
-  }, [name, email, password, repassword, login, emailError]);
+
+    if (step === "details") {
+      setIsButtonDisabled(!(name && email && !emailError));
+    }
+
+    if (step === "otp") {
+      setIsButtonDisabled(!(otp.length >= 6));
+    }
+
+    if (step === "password") {
+      setIsButtonDisabled(!(password && repassword && password === repassword));
+    }
+  }, [name, email, password, repassword, otp, login, emailError, step]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    if (emailError) return;
+    setError(null);
 
     try {
       setLoading(true);
-      setError(null);
 
-      const url = login ? "/api/auth/signin" : "/api/auth/signup";
+      // LOGIN FLOW
+      if (login) {
+        const res = await fetch("/api/auth/signin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+          credentials: "include",
+        });
 
-      const payload = login ? { email, password } : { name, email, password };
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
 
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        credentials: "include",
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Something went wrong");
+        router.push("/dashboard");
+        return;
       }
 
-      router.push("/dashboard");
+      // STEP 1: SEND OTP
+      if (step === "details") {
+        const res = await fetch("/api/auth/send-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+
+        setStep("otp");
+        return;
+      }
+
+      // STEP 2: VERIFY OTP
+      if (step === "otp") {
+        const res = await fetch("/api/auth/verify-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, otp }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+
+        setStep("password");
+        return;
+      }
+
+      // STEP 3: FINAL SIGNUP
+      if (step === "password") {
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password }),
+          credentials: "include",
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+
+        router.push("/dashboard");
+      }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -96,19 +141,18 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
         <div className="relative hidden md:flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-700 p-10 text-white">
           <div className="relative z-10 max-w-sm space-y-6">
             <Image
-              src={login ? "/logo.png" : "/logo2.png"}
+              src="/logo.png"
               alt="CoRoute Logo"
               width={300}
               height={300}
-              className={login ? "rounded-lg" : "rounded-full"}
+              className="rounded-lg"
             />
             <h2 className="text-3xl font-bold leading-tight">
               Travel Smarter. Share Better.
             </h2>
             <p className="text-white/80 text-sm leading-relaxed">
-              CoRoute connects people heading to the same destination so they
-              can reduce costs, lower emissions, and build smarter commuting
-              networks.
+              CoRoute connects people heading to the same destination to reduce
+              cost, emissions and improve commuting.
             </p>
           </div>
         </div>
@@ -125,64 +169,108 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
             </p>
 
             <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-              {!login && (
-                <LabelInputContainer>
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="John Doe"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </LabelInputContainer>
+              {/* SIGNUP FLOW */}
+              {!login && step === "details" && (
+                <>
+                  <LabelInputContainer>
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                  </LabelInputContainer>
+
+                  <LabelInputContainer>
+                    <Label htmlFor="email">NITW Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value.toLowerCase())}
+                    />
+                  </LabelInputContainer>
+
+                  {emailError && (
+                    <p className="text-sm text-red-500">{emailError}</p>
+                  )}
+                </>
               )}
 
-              <LabelInputContainer>
-                <Label htmlFor="email">NITW Email</Label>
-                <Input
-                  id="email"
-                  placeholder="abc@student.nitw.ac.in"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value.toLowerCase())}
-                />
-              </LabelInputContainer>
-
-              {emailError && (
-                <p className="text-sm text-red-500">{emailError}</p>
+              {!login && step === "otp" && (
+                <>
+                  <LabelInputContainer>
+                    <Label htmlFor="otp">Enter OTP</Label>
+                    <Input
+                      id="otp"
+                      type="text"
+                      maxLength={8}
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      placeholder="Enter 6 digit code"
+                    />
+                  </LabelInputContainer>
+                </>
               )}
 
-              <LabelInputContainer>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  placeholder="••••••••"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </LabelInputContainer>
+              {!login && step === "password" && (
+                <>
+                  <LabelInputContainer>
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </LabelInputContainer>
 
-              {!login && (
-                <LabelInputContainer>
-                  <Label htmlFor="reenterpassword">Confirm Password</Label>
-                  <Input
-                    id="reenterpassword"
-                    placeholder="••••••••"
-                    type="password"
-                    value={repassword}
-                    onChange={(e) => setRePassword(e.target.value)}
-                  />
-                </LabelInputContainer>
+                  <LabelInputContainer>
+                    <Label htmlFor="repassword">Confirm Password</Label>
+                    <Input
+                      id="repassword"
+                      type="password"
+                      value={repassword}
+                      onChange={(e) => setRePassword(e.target.value)}
+                    />
+                  </LabelInputContainer>
+
+                  {repassword && password !== repassword && (
+                    <p className="text-sm text-red-500">
+                      Passwords do not match
+                    </p>
+                  )}
+                </>
               )}
 
-              {!login && repassword && password !== repassword && (
-                <p className="text-sm text-red-500">Passwords do not match</p>
+              {/* LOGIN FLOW */}
+              {login && (
+                <>
+                  <LabelInputContainer>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value.toLowerCase())}
+                    />
+                  </LabelInputContainer>
+
+                  <LabelInputContainer>
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </LabelInputContainer>
+                </>
               )}
 
               <button
-                className="mt-4 w-full rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 py-2.5 font-semibold text-white transition hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-4 w-full rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 py-2.5 font-semibold text-white transition disabled:opacity-50"
                 type="submit"
                 disabled={isButtonDisabled || loading}
               >
@@ -190,8 +278,11 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
                   ? "Processing..."
                   : login
                     ? "Sign In"
-                    : "Create Account"}{" "}
-                →
+                    : step === "details"
+                      ? "Send OTP"
+                      : step === "otp"
+                        ? "Verify OTP"
+                        : "Create Account"}
               </button>
 
               {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
