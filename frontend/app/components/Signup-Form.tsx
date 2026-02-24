@@ -142,7 +142,7 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
                 <Label htmlFor="email">NITW Email</Label>
                 <Input
                   id="email"
-                  placeholder="as25csb1a21@student.nitw.ac.in"
+                  placeholder="abc@student.nitw.ac.in"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value.toLowerCase())}

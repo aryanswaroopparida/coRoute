@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const { email, password } = await request.json();
-    console.log(email, password);
 
     if (!email || !password) {
       return NextResponse.json(
@@ -20,7 +19,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user
     const user = await User.findOne({ email });
     if (!user) {
       return NextResponse.json(
@@ -29,7 +27,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return NextResponse.json(
@@ -38,22 +35,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate JWT
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: "30d" },
     );
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       message: "Login successful",
-      token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
       },
     });
+
+    response.cookies.set("token", token, {
+      httpOnly: true, // Prevent JS access
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict", // CSRF protection
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      path: "/", // Available across app
+    });
+
+    return response;
   } catch (error) {
     console.error(error);
     return NextResponse.json(

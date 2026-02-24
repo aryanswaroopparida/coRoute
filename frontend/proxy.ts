@@ -1,28 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import configMap from "./config/config";
+import configMap from "@/config/config";
 
 const JWT_SECRET = configMap.jwtSecret!;
 
+const protectedRoutes = ["/dashboard", "/api/protected"];
+
 export function proxy(request: NextRequest) {
-  const token = request.headers.get("authorization")?.replace("Bearer ", "");
+  const { pathname } = request.nextUrl;
+
+  const isProtected = protectedRoutes.some((route) =>
+    pathname.startsWith(route),
+  );
+
+  if (!isProtected) {
+    return NextResponse.next();
+  }
+
+  const token = request.cookies.get("token")?.value;
 
   if (!token) {
-    return NextResponse.json({ error: "No token provided" }, { status: 401 });
+    return redirectToLogin(request);
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    // Add user info to headers or something, but for now, just verify
-    const response = NextResponse.next();
-    response.headers.set("x-user-id", decoded.userId);
-    response.headers.set("x-user-role", decoded.role);
-    return response;
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      userId: string;
+      email: string;
+    };
+
+    // Optional: Forward user info to downstream routes
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-user-id", decoded.userId);
+
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   } catch (error) {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    return redirectToLogin(request);
   }
 }
 
+function redirectToLogin(request: NextRequest) {
+  const loginUrl = new URL("/login", request.url);
+  return NextResponse.redirect(loginUrl);
+}
+
 export const config = {
-  matcher: ["/api/protected/:path*"],
+  matcher: ["/dashboard/:path*", "/api/protected/:path*"],
 };

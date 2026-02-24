@@ -52,6 +52,7 @@ export default function DashboardPage() {
     const lng = place.geometry.location.lng();
 
     setSelectedLocation({ lat, lng });
+    console.log("Destination Latutude :", lat, " Longitude :", lng);
     setMapCenter({ lat, lng });
 
     // Call backend
@@ -84,12 +85,26 @@ export default function DashboardPage() {
       {/* Google Autocomplete */}
       <div className="mt-8">
         <Autocomplete
-          onLoad={(auto) => (autocompleteRef.current = auto)}
+          onLoad={(auto) => {
+            autocompleteRef.current = auto;
+
+            // Bias towards Telangana
+            const bounds = new window.google.maps.LatLngBounds(
+              { lat: 15.8, lng: 77.1 },
+              { lat: 19.9, lng: 81.1 },
+            );
+
+            auto.setBounds(bounds);
+          }}
           onPlaceChanged={onPlaceChanged}
+          options={{
+            componentRestrictions: { country: "in" }, // Restrict to India
+            // types: ["(cities)"], // Prefer cities
+          }}
         >
           <input
             type="text"
-            placeholder="Search destination (e.g. Hanamkonda)"
+            placeholder="Search destination (e.g. Warangal)"
             className="w-full p-3 border rounded-lg"
           />
         </Autocomplete>

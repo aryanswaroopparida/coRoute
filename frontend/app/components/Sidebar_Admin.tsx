@@ -7,7 +7,6 @@ import React, { useState } from "react";
 import { twMerge } from "tailwind-merge";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  IconLayoutDashboard,
   IconMapPin,
   IconMessageCircle,
   IconUser,
@@ -17,10 +16,11 @@ import {
   IconLayoutSidebarRightCollapse,
 } from "@tabler/icons-react";
 import { isMobile } from "@/app/lib/utils";
+import { useRouter } from "next/navigation";
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: IconLayoutDashboard },
-  { label: "Find Matches", href: "/dashboard/match", icon: IconMapPin },
+  // { label: "Dashboard", href: "/dashboard", icon: IconLayoutDashboard },
+  { label: "Find Matches", href: "/dashboard", icon: IconMapPin },
   { label: "My Rides", href: "/dashboard/rides", icon: IconPlus },
   { label: "Chat", href: "/dashboard/chat", icon: IconMessageCircle },
   { label: "Profile", href: "/dashboard/profile", icon: IconUser },
@@ -28,6 +28,7 @@ const navItems = [
 ];
 
 export const Sidebar = () => {
+  const router = useRouter();
   const [open, setOpen] = useState(isMobile() ? false : true);
 
   return (
@@ -49,8 +50,16 @@ export const Sidebar = () => {
             {/* Logout Section */}
             <div
               className="flex items-center space-x-2 text-sm text-red-500 cursor-pointer hover:bg-red-50 p-2 rounded-md"
-              onClick={() => {
-                // call logout API
+              onClick={async () => {
+                try {
+                  await fetch("/api/protected/logout", {
+                    method: "POST",
+                    credentials: "include",
+                  });
+                  router.push("/");
+                } catch (error) {
+                  alert("Failed to log out");
+                }
               }}
             >
               <IconLogout className="h-4 w-4" />
@@ -110,7 +119,7 @@ const SidebarHeader = () => {
   return (
     <div className="flex items-center space-x-3">
       <Image
-        src="/profile.png" // replace with logged-in user image
+        src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1760&q=80" // replace with logged-in user image
         alt="User Avatar"
         height={40}
         width={40}
