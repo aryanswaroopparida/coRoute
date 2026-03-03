@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/app/redis/connect";
+import dbConnect from "@/app/db/dbConnect";
+import User from "@/app/models/User";
 
 const SLOT_SIZE = 600;
 
@@ -9,6 +11,8 @@ function normalizeSlot(slotUnix: number) {
 
 export async function GET(req: NextRequest) {
   try {
+    await dbConnect();
+
     const { searchParams } = new URL(req.url);
 
     const latitude = searchParams.get("lat");
@@ -26,27 +30,20 @@ export async function GET(req: NextRequest) {
 
     const nowUnix = Math.floor(Date.now() / 1000);
     const currentSlot = normalizeSlot(nowUnix);
-
     const requestedSlot = normalizeSlot(Number(slot));
 
-    // Build slots to check in order
     const slotsToCheck: number[] = [requestedSlot];
 
-    // If requested slot is future slot
     if (requestedSlot > currentSlot) {
       const prevSlot = requestedSlot - SLOT_SIZE;
       if (prevSlot >= currentSlot) {
         slotsToCheck.push(prevSlot);
       }
-
-      const nextSlot = requestedSlot + SLOT_SIZE;
-      slotsToCheck.push(nextSlot);
+      slotsToCheck.push(requestedSlot + SLOT_SIZE);
     }
 
-    // If requested slot is current slot (matchNow)
     if (requestedSlot === currentSlot) {
-      const nextSlot = requestedSlot + SLOT_SIZE;
-      slotsToCheck.push(nextSlot);
+      slotsToCheck.push(requestedSlot + SLOT_SIZE);
     }
 
     for (const slotUnix of slotsToCheck) {
@@ -62,29 +59,47 @@ export async function GET(req: NextRequest) {
 
       if (!users.length) continue;
 
-      if (genderFilter === "any") {
-        return NextResponse.json({
-          users,
-          matchedSlot: slotUnix,
-        });
+      let filteredUsers = users;
+
+      if (genderFilter !== "any") {
+        const genders = await redis.hmget("user:gender", ...users);
+        filteredUsers = users.filter(
+          (userId, index) => genders[index] === genderFilter,
+        );
       }
 
-      const genders = await redis.hmget("user:gender", ...users);
+      if (!filteredUsers.length) continue;
 
-      const filteredUsers = users.filter(
-        (userId, index) => genders[index] === genderFilter,
-      );
+      // 🔥 Fetch names from MongoDB in batch
+      const dbUsers = await User.find(
+        { email: { $in: filteredUsers } },
+        { name: 1, email: 1 },
+      ).lean();
 
-      if (filteredUsers.length > 0) {
-        return NextResponse.json({
-          users: filteredUsers,
-          matchedSlot: slotUnix,
-        });
-      }
+      // Map by email for fast lookup
+      const userMap = new Map(dbUsers.map((u) => [u.email.toLowerCase(), u]));
+
+      const formattedUsers = filteredUsers
+        .map((email) => {
+          const user = userMap.get(email.toLowerCase());
+          if (!user) return null;
+
+          return {
+            email: user.email,
+            name: user.name,
+          };
+        })
+        .filter(Boolean);
+
+      return NextResponse.json({
+        users: formattedUsers,
+        matchedSlot: slotUnix,
+      });
     }
 
     return NextResponse.json({ users: [] });
   } catch (err) {
+    console.error(err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

@@ -15,7 +15,7 @@ const libraries: "places"[] = ["places"];
 const SLOT_SIZE = 600; // 10 minutes
 
 type Student = {
-  _id: string;
+  email: string;
   name: string;
   destination: string;
   distance: number;
@@ -120,13 +120,14 @@ export default function DashboardPage() {
       const data = await res.json();
 
       const filtered = data.users?.filter(
-        (id: string) => id !== email.toLowerCase(),
+        (user: any) => user.email.toLowerCase() !== email.toLowerCase(),
       );
 
+      // Map properly
       const formatted: Student[] =
-        filtered?.map((id: string) => ({
-          _id: id,
-          name: id.split("@")[0],
+        filtered?.map((user: any) => ({
+          _id: user.email,
+          name: user.name,
           destination: "Selected Destination",
           distance: 0,
         })) || [];
@@ -277,7 +278,7 @@ export default function DashboardPage() {
         <div className="grid gap-4 mt-8">
           {students.map((student) => (
             <div
-              key={student._id}
+              key={student.email}
               className="p-4 rounded-xl border bg-white shadow-sm"
             >
               <h3 className="font-semibold">{student.name}</h3>
