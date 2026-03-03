@@ -20,6 +20,7 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [repassword, setRePassword] = useState("");
+  const [gender, setGender] = useState<"girls" | "boys" | "">("");
 
   const [emailError, setEmailError] = useState<string | null>(null);
   const [isButtonDisabled, setIsButtonDisabled] = useState(true);
@@ -48,17 +49,20 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
     }
 
     if (step === "details") {
-      setIsButtonDisabled(!(name && email && !emailError));
+      setIsButtonDisabled(!(name && email && gender && !emailError));
+      return;
     }
 
     if (step === "otp") {
       setIsButtonDisabled(!(otp.length >= 6));
+      return;
     }
 
     if (step === "password") {
       setIsButtonDisabled(!(password && repassword && password === repassword));
+      return;
     }
-  }, [name, email, password, repassword, otp, login, emailError, step]);
+  }, [name, email, password, repassword, otp, login, emailError, step, gender]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -88,7 +92,7 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
         const res = await fetch("/api/auth/send-otp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email }),
+          body: JSON.stringify({ name, email, gender }),
         });
 
         const data = await res.json();
@@ -118,7 +122,7 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
         const res = await fetch("/api/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password }),
+          body: JSON.stringify({ name, email, password, gender }),
           credentials: "include",
         });
 
@@ -169,7 +173,7 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
             </p>
 
             <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-              {/* SIGNUP FLOW */}
+              {/* SIGNUP - DETAILS */}
               {!login && step === "details" && (
                 <>
                   <LabelInputContainer>
@@ -195,25 +199,41 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
                   {emailError && (
                     <p className="text-sm text-red-500">{emailError}</p>
                   )}
-                </>
-              )}
 
-              {!login && step === "otp" && (
-                <>
                   <LabelInputContainer>
-                    <Label htmlFor="otp">Enter OTP</Label>
-                    <Input
-                      id="otp"
-                      type="text"
-                      maxLength={8}
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      placeholder="Enter 6 digit code"
-                    />
+                    <Label htmlFor="gender">Gender</Label>
+                    <select
+                      id="gender"
+                      value={gender}
+                      onChange={(e) =>
+                        setGender(e.target.value as "girls" | "boys")
+                      }
+                      className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="girls">Female</option>
+                      <option value="boys">Male</option>
+                    </select>
                   </LabelInputContainer>
                 </>
               )}
 
+              {/* OTP STEP */}
+              {!login && step === "otp" && (
+                <LabelInputContainer>
+                  <Label htmlFor="otp">Enter OTP</Label>
+                  <Input
+                    id="otp"
+                    type="text"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder="Enter 6 digit code"
+                  />
+                </LabelInputContainer>
+              )}
+
+              {/* PASSWORD STEP */}
               {!login && step === "password" && (
                 <>
                   <LabelInputContainer>
@@ -244,7 +264,7 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
                 </>
               )}
 
-              {/* LOGIN FLOW */}
+              {/* LOGIN */}
               {login && (
                 <>
                   <LabelInputContainer>

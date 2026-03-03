@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
   await redis.set(cooldownKey, "1", "EX", COOLDOWN_TTL);
 
   const { subject, html, text } = generateOTPEmailTemplate(name, otp);
+  console.log("OTP of email", otp);
 
   await sendEmail(email, subject, html, text);
 

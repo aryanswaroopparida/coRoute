@@ -12,6 +12,7 @@ import {
 import { useRef, useState, useEffect } from "react";
 
 const libraries: "places"[] = ["places"];
+const SLOT_SIZE = 600; // 10 minutes in seconds
 
 type Student = {
   _id: string;
@@ -27,20 +28,14 @@ export default function DashboardPage() {
   });
 
   const [email, setEmail] = useState("");
-
-  useEffect(() => {
-    try {
-      (async () => {
-        const res = await fetch("/api/protected/user");
-        let jsonData = await res.json();
-        console.log("jsonData :", jsonData);
-        setEmail(jsonData.user.email);
-      })();
-    } catch (error) {}
-  }, []);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [genderFilter, setGenderFilter] = useState<"any" | "girls" | "boys">(
+    "any",
+  );
 
   const [mapCenter, setMapCenter] = useState({
-    lat: 17.9689, // NITW default
+    lat: 17.9689,
     lng: 79.5941,
   });
 
@@ -54,55 +49,73 @@ export default function DashboardPage() {
 
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-  const onPlaceChanged = async () => {
-    if (!autocompleteRef.current) return;
+  // Fetch logged-in user
+  useEffect(() => {
+    (async () => {
+      const res = await fetch("/api/protected/user");
+      const jsonData = await res.json();
+      setEmail(jsonData.user.email);
+    })();
+  }, []);
 
-    const place = autocompleteRef.current.getPlace();
-    if (!place.geometry?.location) return;
+  const normalizeSlot = (unixSeconds: number) =>
+    Math.floor(unixSeconds / SLOT_SIZE) * SLOT_SIZE;
 
-    const lat = place.geometry.location.lat();
-    const lng = place.geometry.location.lng();
+  const handleFindMatches = async () => {
+    if (!selectedDate || !selectedTime) {
+      alert("Please select date and time.");
+      return;
+    }
 
-    setSelectedLocation({ lat, lng });
-    setMapCenter({ lat, lng });
+    if (!selectedLocation) {
+      alert("Please select a destination.");
+      return;
+    }
 
-    // const email = "student@example.com";
+    const combined = new Date(`${selectedDate}T${selectedTime}`);
+    const unixSeconds = Math.floor(combined.getTime() / 1000);
+    const normalizedSlot = normalizeSlot(unixSeconds);
+
+    const now = Math.floor(Date.now() / 1000);
+    if (normalizedSlot < now) {
+      alert("Cannot book past time.");
+      return;
+    }
 
     try {
       setLoading(true);
 
-      // 1️⃣ Update user location in Redis
+      const { lat, lng } = selectedLocation;
+
+      // 1️⃣ Book slot
       await fetch("/api/protected/geo/update", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: email.toLowerCase(),
           latitude: lat,
           longitude: lng,
+          slot: normalizedSlot,
         }),
       });
 
-      // 2️⃣ Fetch nearby users (5km default)
+      // 2️⃣ Fetch nearby users
       const res = await fetch(
-        `/api/protected/geo/nearby?lat=${lat}&lng=${lng}&radius=1`,
+        `/api/protected/geo/nearby?lat=${lat}&lng=${lng}&radius=1&slot=${normalizedSlot}&genderFilter=${genderFilter}`,
       );
 
       const data = await res.json();
 
-      // Remove self from results
       const filtered = data.users?.filter(
         (id: string) => id !== email.toLowerCase(),
       );
 
-      // Map into Student format
       const formatted: Student[] =
         filtered?.map((id: string) => ({
           _id: id,
           name: id.split("@")[0],
-          destination: place.formatted_address || "Unknown",
-          distance: 0, // We'll improve this later
+          destination: "Selected Destination",
+          distance: 0,
         })) || [];
 
       setStudents(formatted);
@@ -118,35 +131,72 @@ export default function DashboardPage() {
   return (
     <Container>
       <span className="text-4xl">🗺️</span>
-      <Heading className="font-black">NITW Destination Match</Heading>
+      <Heading className="font-black">Destination Match</Heading>
 
       <Paragraph className="mt-4 max-w-xl">
-        Search a destination and find students traveling there.
+        Select a date, time, destination and find nearby students.
       </Paragraph>
 
-      {/* Google Autocomplete */}
-      <div className="mt-8">
+      {/* Date Picker */}
+      <div className="mt-6">
+        <label className="block mb-2 font-semibold">Select Date</label>
+        <input
+          type="date"
+          className="w-full p-3 border rounded-lg"
+          value={selectedDate}
+          min={new Date().toISOString().split("T")[0]}
+          onChange={(e) => setSelectedDate(e.target.value)}
+        />
+      </div>
+
+      {/* Time Picker */}
+      <div className="mt-4">
+        <label className="block mb-2 font-semibold">Select Time</label>
+        <input
+          type="time"
+          step="600"
+          className="w-full p-3 border rounded-lg"
+          value={selectedTime}
+          onChange={(e) => setSelectedTime(e.target.value)}
+        />
+      </div>
+
+      {/* Gender Preference */}
+      <div className="mt-4">
+        <label className="block mb-2 font-semibold">Gender Preference</label>
+        <select
+          className="w-full p-3 border rounded-lg"
+          value={genderFilter}
+          onChange={(e) =>
+            setGenderFilter(e.target.value as "any" | "girls" | "boys")
+          }
+        >
+          <option value="any">Anyone</option>
+          <option value="girls">Only Girls</option>
+          <option value="boys">Only Boys</option>
+        </select>
+      </div>
+
+      {/* Destination Search */}
+      <div className="mt-6">
         <Autocomplete
-          onLoad={(auto) => {
-            autocompleteRef.current = auto;
+          onLoad={(auto) => (autocompleteRef.current = auto)}
+          onPlaceChanged={() => {
+            if (!autocompleteRef.current) return;
+            const place = autocompleteRef.current.getPlace();
+            if (!place.geometry?.location) return;
 
-            // Bias towards Telangana
-            const bounds = new window.google.maps.LatLngBounds(
-              { lat: 15.8, lng: 77.1 },
-              { lat: 19.9, lng: 81.1 },
-            );
+            const lat = place.geometry.location.lat();
+            const lng = place.geometry.location.lng();
 
-            auto.setBounds(bounds);
+            setSelectedLocation({ lat, lng });
+            setMapCenter({ lat, lng });
           }}
-          onPlaceChanged={onPlaceChanged}
-          options={{
-            componentRestrictions: { country: "in" }, // Restrict to India
-            // types: ["(cities)"], // Prefer cities
-          }}
+          options={{ componentRestrictions: { country: "in" } }}
         >
           <input
             type="text"
-            placeholder="Search destination (e.g. Warangal)"
+            placeholder="Search destination"
             className="w-full p-3 border rounded-lg"
           />
         </Autocomplete>
@@ -163,7 +213,15 @@ export default function DashboardPage() {
         </GoogleMap>
       </div>
 
-      {/* Student Results */}
+      {/* Find Matches Button */}
+      <button
+        onClick={handleFindMatches}
+        className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+      >
+        Find Matches
+      </button>
+
+      {/* Results */}
       {loading && <p className="mt-6 text-gray-500">Finding students...</p>}
 
       {!loading && students.length > 0 && (
@@ -174,9 +232,6 @@ export default function DashboardPage() {
               className="p-4 rounded-xl border bg-white shadow-sm"
             >
               <h3 className="font-semibold">{student.name}</h3>
-              <p className="text-sm text-gray-500">
-                Destination: {student.destination}
-              </p>
               <p className="text-sm text-blue-600">
                 {student.distance.toFixed(2)} km away
               </p>
@@ -186,9 +241,7 @@ export default function DashboardPage() {
       )}
 
       {!loading && students.length === 0 && selectedLocation && (
-        <p className="mt-6 text-gray-500">
-          No students found for this destination.
-        </p>
+        <p className="mt-6 text-gray-500">No students found for this slot.</p>
       )}
     </Container>
   );
