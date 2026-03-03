@@ -24,36 +24,66 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const slotUnix = normalizeSlot(Number(slot));
-    const geoKey = `geo:${slotUnix}`;
+    const nowUnix = Math.floor(Date.now() / 1000);
+    const currentSlot = normalizeSlot(nowUnix);
 
-    const users = (await redis.georadius(
-      geoKey,
-      Number(longitude),
-      Number(latitude),
-      Number(radius),
-      "km",
-    )) as string[];
+    const requestedSlot = normalizeSlot(Number(slot));
 
-    if (!users.length) {
-      return NextResponse.json({ users: [] });
+    // Build slots to check in order
+    const slotsToCheck: number[] = [requestedSlot];
+
+    // If requested slot is future slot
+    if (requestedSlot > currentSlot) {
+      const prevSlot = requestedSlot - SLOT_SIZE;
+      if (prevSlot >= currentSlot) {
+        slotsToCheck.push(prevSlot);
+      }
+
+      const nextSlot = requestedSlot + SLOT_SIZE;
+      slotsToCheck.push(nextSlot);
     }
 
-    // If no filtering needed
-    if (genderFilter === "any") {
-      return NextResponse.json({ users });
+    // If requested slot is current slot (matchNow)
+    if (requestedSlot === currentSlot) {
+      const nextSlot = requestedSlot + SLOT_SIZE;
+      slotsToCheck.push(nextSlot);
     }
 
-    // Fetch genders in batch
-    const genders = await redis.hmget("user:gender", ...users);
+    for (const slotUnix of slotsToCheck) {
+      const geoKey = `geo:${slotUnix}`;
 
-    const filteredUsers = users.filter(
-      (userId, index) => genders[index] === genderFilter,
-    );
+      const users = (await redis.georadius(
+        geoKey,
+        Number(longitude),
+        Number(latitude),
+        Number(radius),
+        "km",
+      )) as string[];
 
-    return NextResponse.json({
-      users: filteredUsers,
-    });
+      if (!users.length) continue;
+
+      if (genderFilter === "any") {
+        return NextResponse.json({
+          users,
+          matchedSlot: slotUnix,
+        });
+      }
+
+      const genders = await redis.hmget("user:gender", ...users);
+
+      const filteredUsers = users.filter(
+        (userId, index) => genders[index] === genderFilter,
+      );
+
+      if (filteredUsers.length > 0) {
+        return NextResponse.json({
+          users: filteredUsers,
+          matchedSlot: slotUnix,
+        });
+      }
+    }
+
+    return NextResponse.json({ users: [] });
   } catch (err) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
