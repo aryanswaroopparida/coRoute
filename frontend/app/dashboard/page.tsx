@@ -126,7 +126,7 @@ export default function DashboardPage() {
       // Map properly
       const formatted: Student[] =
         filtered?.map((user: any) => ({
-          _id: user.email,
+          email: user.email,
           name: user.name,
           destination: "Selected Destination",
           distance: 0,
