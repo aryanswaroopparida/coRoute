@@ -23,8 +23,12 @@ const navItems = [
   { label: "Find Matches", href: "/dashboard", icon: IconMapPin },
   { label: "My Rides", href: "/dashboard/rides", icon: IconPlus },
   { label: "Chat", href: "/dashboard/chat", icon: IconMessageCircle },
-  { label: "Profile", href: "/dashboard/profile", icon: IconUser },
-  { label: "Settings", href: "/dashboard/settings", icon: IconSettings },
+  {
+    label: "Change Password",
+    href: "/dashboard/change-password",
+    icon: IconUser,
+  },
+  // { label: "Settings", href: "/dashboard/settings", icon: IconSettings },
 ];
 
 export const Sidebar = () => {
