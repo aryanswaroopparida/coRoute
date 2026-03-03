@@ -219,7 +219,17 @@ export default function DashboardPage() {
       {/* Destination */}
       <div className="mt-6">
         <Autocomplete
-          onLoad={(auto) => (autocompleteRef.current = auto)}
+          onLoad={(auto) => {
+            autocompleteRef.current = auto;
+
+            // Bias towards Telangana
+            const bounds = new window.google.maps.LatLngBounds(
+              { lat: 15.8, lng: 77.1 },
+              { lat: 19.9, lng: 81.1 },
+            );
+
+            auto.setBounds(bounds);
+          }}
           onPlaceChanged={() => {
             if (!autocompleteRef.current) return;
             const place = autocompleteRef.current.getPlace();
@@ -231,10 +241,14 @@ export default function DashboardPage() {
             setSelectedLocation({ lat, lng });
             setMapCenter({ lat, lng });
           }}
+          options={{
+            componentRestrictions: { country: "in" }, // Restrict to India
+            // types: ["(cities)"], // Prefer cities
+          }}
         >
           <input
             type="text"
-            placeholder="Search destination"
+            placeholder="Search destination (e.g. Warangal)"
             className="w-full p-3 border rounded-lg"
           />
         </Autocomplete>
