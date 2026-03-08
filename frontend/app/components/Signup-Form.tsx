@@ -142,7 +142,7 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
     <div className="min-h-screen w-full bg-neutral-100 dark:bg-black flex items-center justify-center px-4">
       <div className="grid w-full max-w-6xl grid-cols-1 overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-neutral-900 md:grid-cols-2">
         {/* LEFT SIDE */}
-        <div className="relative hidden md:flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-700 p-10 text-white">
+        <div className="relative hidden md:flex items-center justify-center bg-linear-to-br from-blue-600 to-indigo-700 p-10 text-white">
           <div className="relative z-10 max-w-sm space-y-6">
             <Image
               src="/logo.png"
@@ -290,7 +290,7 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
               )}
 
               <button
-                className="mt-4 w-full rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 py-2.5 font-semibold text-white transition disabled:opacity-50"
+                className="mt-4 w-full rounded-lg bg-linear-to-br from-blue-600 to-indigo-600 py-2.5 font-semibold text-white transition disabled:opacity-50"
                 type="submit"
                 disabled={isButtonDisabled || loading}
               >
