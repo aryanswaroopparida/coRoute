@@ -12,13 +12,18 @@ import {
 import { useRef, useState, useEffect } from "react";
 
 const libraries: "places"[] = ["places"];
-const SLOT_SIZE = 600; // 10 minutes
+const SLOT_SIZE = 600;
 
 type Student = {
   email: string;
   name: string;
   destination: string;
   distance: number;
+};
+
+type GroupRoom = {
+  _id: string;
+  participants: string[];
 };
 
 export default function DashboardPage() {
@@ -38,6 +43,8 @@ export default function DashboardPage() {
   );
 
   const [timeRange, setTimeRange] = useState<"10" | "30" | "60">("10");
+
+  const [groupMatch, setGroupMatch] = useState<GroupRoom | null>(null);
 
   const [mapCenter, setMapCenter] = useState({
     lat: 17.9689,
@@ -157,9 +164,7 @@ export default function DashboardPage() {
 
       const roomData = await roomRes.json();
 
-      const roomId = roomData.room._id;
-
-      console.log("Group Room:", roomId);
+      setGroupMatch(roomData.room);
     } catch (err) {
       console.error(err);
       alert("Something went wrong");
@@ -178,6 +183,7 @@ export default function DashboardPage() {
         Book a slot or match instantly.
       </Paragraph>
 
+      {/* Match Now Toggle */}
       <div className="mt-6 flex items-center gap-2">
         <input
           type="checkbox"
@@ -187,6 +193,7 @@ export default function DashboardPage() {
         <label className="font-semibold">Match Now (Next 10 min)</label>
       </div>
 
+      {/* Date Picker */}
       <div className="mt-4">
         <label className="block mb-2 font-semibold">Select Date</label>
         <input
@@ -199,6 +206,7 @@ export default function DashboardPage() {
         />
       </div>
 
+      {/* Time Picker */}
       <div className="mt-4">
         <label className="block mb-2 font-semibold">Select Time</label>
         <input
@@ -211,6 +219,7 @@ export default function DashboardPage() {
         />
       </div>
 
+      {/* Radius */}
       <div className="mt-4">
         <label className="block mb-2 font-semibold">Radius (km)</label>
         <select
@@ -225,6 +234,7 @@ export default function DashboardPage() {
         </select>
       </div>
 
+      {/* Time Range */}
       <div className="mt-4">
         <label className="block mb-2 font-semibold">Search Time Range</label>
         <select
@@ -238,6 +248,7 @@ export default function DashboardPage() {
         </select>
       </div>
 
+      {/* Gender */}
       <div className="mt-4">
         <label className="block mb-2 font-semibold">Gender Preference</label>
         <select
@@ -253,6 +264,7 @@ export default function DashboardPage() {
         </select>
       </div>
 
+      {/* Destination */}
       <div className="mt-6">
         <Autocomplete
           onLoad={(auto) => {
@@ -305,10 +317,31 @@ export default function DashboardPage() {
         Find Matches
       </button>
 
-      {loading && <p className="mt-6 text-gray-500">Finding students...</p>}
+      {/* GROUP MATCH */}
+      {groupMatch && (
+        <div className="grid gap-4 mt-8">
+          <h2 className="font-semibold text-lg">Group Match</h2>
 
+          <div className="flex flex-row justify-between">
+            <span>Group Chat ({groupMatch.participants.length} people)</span>
+
+            <button
+              onClick={() => {
+                window.location.href = `/chat/${groupMatch._id}`;
+              }}
+              className="text-sm text-green-600"
+            >
+              Join Group Chat
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PRIVATE MATCHES */}
       {!loading && students.length > 0 && (
         <div className="grid gap-4 mt-8">
+          <h2 className="font-semibold text-lg">Private Matches</h2>
+
           {students.map((student) => (
             <div key={student.email} className="flex flex-row justify-between">
               <span>{student.name}</span>

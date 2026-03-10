@@ -9,14 +9,11 @@ function normalizeSlot(slotUnix: number) {
   return Math.floor(slotUnix / SLOT_SIZE) * SLOT_SIZE;
 }
 
-// NEW: helper function to generate future slots
 function addFutureSlots(baseSlot: number, futureSlots: number) {
   const slots: number[] = [];
-
   for (let i = 1; i <= futureSlots; i++) {
     slots.push(baseSlot + i * SLOT_SIZE);
   }
-
   return slots;
 }
 
@@ -31,8 +28,6 @@ export async function GET(req: NextRequest) {
     const radius = searchParams.get("radius") || "5";
     const slot = searchParams.get("slot");
     const genderFilter = searchParams.get("genderFilter") || "any";
-
-    // NEW: number of future slots to search
     const futureSlots = Number(searchParams.get("futureSlots") || "0");
 
     if (!latitude || !longitude || !slot) {
@@ -60,62 +55,84 @@ export async function GET(req: NextRequest) {
       slotsToCheck.push(requestedSlot + SLOT_SIZE);
     }
 
-    // NEW: add future slots
     if (futureSlots > 0) {
       slotsToCheck.push(...addFutureSlots(requestedSlot, futureSlots));
     }
 
+    // ---------- REDIS PIPELINE ----------
+    const pipeline = redis.pipeline();
+
     for (const slotUnix of slotsToCheck) {
       const geoKey = `geo:${slotUnix}`;
 
-      const users = (await redis.georadius(
+      pipeline.georadius(
         geoKey,
         Number(longitude),
         Number(latitude),
         Number(radius),
         "km",
-      )) as string[];
-
-      if (!users.length) continue;
-
-      let filteredUsers = users;
-
-      if (genderFilter !== "any") {
-        const genders = await redis.hmget("user:gender", ...users);
-        filteredUsers = users.filter(
-          (userId, index) => genders[index] === genderFilter,
-        );
-      }
-
-      if (!filteredUsers.length) continue;
-
-      // Fetch names from MongoDB in batch
-      const dbUsers = await User.find(
-        { email: { $in: filteredUsers } },
-        { name: 1, email: 1 },
-      ).lean();
-
-      const userMap = new Map(dbUsers.map((u) => [u.email.toLowerCase(), u]));
-
-      const formattedUsers = filteredUsers
-        .map((email) => {
-          const user = userMap.get(email.toLowerCase());
-          if (!user) return null;
-
-          return {
-            email: user.email,
-            name: user.name,
-          };
-        })
-        .filter(Boolean);
-
-      return NextResponse.json({
-        users: formattedUsers,
-        matchedSlot: slotUnix,
-      });
+      );
     }
 
-    return NextResponse.json({ users: [] });
+    const results = await pipeline.exec();
+
+    const allUsers: string[] = [];
+    let matchedSlot: number | null = null;
+
+    if (results === null)
+      return NextResponse.json({
+        users: allUsers,
+        matchedSlot,
+      });
+
+    results.forEach((res, index) => {
+      const users = res[1] as string[];
+
+      if (!users || users.length === 0) return;
+
+      if (!matchedSlot) matchedSlot = slotsToCheck[index];
+
+      allUsers.push(...users);
+    });
+
+    const uniqueUsers = [...new Set(allUsers)];
+
+    if (!uniqueUsers.length) {
+      return NextResponse.json({ users: [] });
+    }
+
+    let filteredUsers = uniqueUsers;
+
+    if (genderFilter !== "any") {
+      const genders = await redis.hmget("user:gender", ...uniqueUsers);
+      filteredUsers = uniqueUsers.filter(
+        (userId, index) => genders[index] === genderFilter,
+      );
+    }
+
+    const dbUsers = await User.find(
+      { email: { $in: filteredUsers } },
+      { name: 1, email: 1 },
+    ).lean();
+
+    const userMap = new Map(dbUsers.map((u) => [u.email.toLowerCase(), u]));
+
+    const formattedUsers = filteredUsers
+      .map((email) => {
+        const user = userMap.get(email.toLowerCase());
+        if (!user) return null;
+
+        return {
+          email: user.email,
+          name: user.name,
+        };
+      })
+      .filter(Boolean);
+
+    return NextResponse.json({
+      users: formattedUsers,
+      matchedSlot,
+    });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
