@@ -9,6 +9,17 @@ function normalizeSlot(slotUnix: number) {
   return Math.floor(slotUnix / SLOT_SIZE) * SLOT_SIZE;
 }
 
+// NEW: helper function to generate future slots
+function addFutureSlots(baseSlot: number, futureSlots: number) {
+  const slots: number[] = [];
+
+  for (let i = 1; i <= futureSlots; i++) {
+    slots.push(baseSlot + i * SLOT_SIZE);
+  }
+
+  return slots;
+}
+
 export async function GET(req: NextRequest) {
   try {
     await dbConnect();
@@ -20,6 +31,9 @@ export async function GET(req: NextRequest) {
     const radius = searchParams.get("radius") || "5";
     const slot = searchParams.get("slot");
     const genderFilter = searchParams.get("genderFilter") || "any";
+
+    // NEW: number of future slots to search
+    const futureSlots = Number(searchParams.get("futureSlots") || "0");
 
     if (!latitude || !longitude || !slot) {
       return NextResponse.json(
@@ -46,6 +60,11 @@ export async function GET(req: NextRequest) {
       slotsToCheck.push(requestedSlot + SLOT_SIZE);
     }
 
+    // NEW: add future slots
+    if (futureSlots > 0) {
+      slotsToCheck.push(...addFutureSlots(requestedSlot, futureSlots));
+    }
+
     for (const slotUnix of slotsToCheck) {
       const geoKey = `geo:${slotUnix}`;
 
@@ -70,13 +89,12 @@ export async function GET(req: NextRequest) {
 
       if (!filteredUsers.length) continue;
 
-      // 🔥 Fetch names from MongoDB in batch
+      // Fetch names from MongoDB in batch
       const dbUsers = await User.find(
         { email: { $in: filteredUsers } },
         { name: 1, email: 1 },
       ).lean();
 
-      // Map by email for fast lookup
       const userMap = new Map(dbUsers.map((u) => [u.email.toLowerCase(), u]));
 
       const formattedUsers = filteredUsers

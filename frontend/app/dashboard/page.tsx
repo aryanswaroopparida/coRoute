@@ -37,6 +37,8 @@ export default function DashboardPage() {
     "any",
   );
 
+  const [timeRange, setTimeRange] = useState<"10" | "30" | "60">("10");
+
   const [mapCenter, setMapCenter] = useState({
     lat: 17.9689,
     lng: 79.5941,
@@ -95,12 +97,15 @@ export default function DashboardPage() {
       }
     }
 
+    let futureSlots = 0;
+    if (timeRange === "30") futureSlots = 3;
+    if (timeRange === "60") futureSlots = 6;
+
     try {
       setLoading(true);
 
       const { lat, lng } = selectedLocation;
 
-      // 1️⃣ Add user to geo slot
       await fetch("/api/protected/geo/update", {
         method: "POST",
         headers: {
@@ -114,9 +119,8 @@ export default function DashboardPage() {
         }),
       });
 
-      // 2️⃣ Find nearby users
       const res = await fetch(
-        `/api/protected/geo/nearby?lat=${lat}&lng=${lng}&radius=${radius}&slot=${slotUnix}&genderFilter=${genderFilter}`,
+        `/api/protected/geo/nearby?lat=${lat}&lng=${lng}&radius=${radius}&slot=${slotUnix}&genderFilter=${genderFilter}&futureSlots=${futureSlots}`,
       );
 
       const data = await res.json();
@@ -135,7 +139,6 @@ export default function DashboardPage() {
 
       setStudents(formatted);
 
-      // 3️⃣ Create / join group room
       const participants = [
         email.toLowerCase(),
         ...formatted.map((u) => u.email.toLowerCase()),
@@ -154,13 +157,9 @@ export default function DashboardPage() {
 
       const roomData = await roomRes.json();
 
-      // 4️⃣ Store room id (optional)
       const roomId = roomData.room._id;
 
       console.log("Group Room:", roomId);
-
-      // Optional: auto redirect
-      // router.push(`/chat/${roomId}`);
     } catch (err) {
       console.error(err);
       alert("Something went wrong");
@@ -179,7 +178,6 @@ export default function DashboardPage() {
         Book a slot or match instantly.
       </Paragraph>
 
-      {/* Match Now Toggle */}
       <div className="mt-6 flex items-center gap-2">
         <input
           type="checkbox"
@@ -189,7 +187,6 @@ export default function DashboardPage() {
         <label className="font-semibold">Match Now (Next 10 min)</label>
       </div>
 
-      {/* Date Picker */}
       <div className="mt-4">
         <label className="block mb-2 font-semibold">Select Date</label>
         <input
@@ -202,7 +199,6 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Time Picker */}
       <div className="mt-4">
         <label className="block mb-2 font-semibold">Select Time</label>
         <input
@@ -215,7 +211,6 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Radius Selector */}
       <div className="mt-4">
         <label className="block mb-2 font-semibold">Radius (km)</label>
         <select
@@ -230,7 +225,19 @@ export default function DashboardPage() {
         </select>
       </div>
 
-      {/* Gender Preference */}
+      <div className="mt-4">
+        <label className="block mb-2 font-semibold">Search Time Range</label>
+        <select
+          value={timeRange}
+          onChange={(e) => setTimeRange(e.target.value as "10" | "30" | "60")}
+          className="w-full p-3 border rounded-lg"
+        >
+          <option value="10">Next 10 Minutes</option>
+          <option value="30">Next 30 Minutes</option>
+          <option value="60">Next 1 Hour</option>
+        </select>
+      </div>
+
       <div className="mt-4">
         <label className="block mb-2 font-semibold">Gender Preference</label>
         <select
@@ -246,13 +253,11 @@ export default function DashboardPage() {
         </select>
       </div>
 
-      {/* Destination */}
       <div className="mt-6">
         <Autocomplete
           onLoad={(auto) => {
             autocompleteRef.current = auto;
 
-            // Bias towards Telangana
             const bounds = new window.google.maps.LatLngBounds(
               { lat: 15.8, lng: 77.1 },
               { lat: 19.9, lng: 81.1 },
@@ -272,13 +277,12 @@ export default function DashboardPage() {
             setMapCenter({ lat, lng });
           }}
           options={{
-            componentRestrictions: { country: "in" }, // Restrict to India
-            // types: ["(cities)"], // Prefer cities
+            componentRestrictions: { country: "in" },
           }}
         >
           <input
             type="text"
-            placeholder="Search destination (e.g. Warangal)"
+            placeholder="Search destination"
             className="w-full p-3 border rounded-lg"
           />
         </Autocomplete>
@@ -306,8 +310,9 @@ export default function DashboardPage() {
       {!loading && students.length > 0 && (
         <div className="grid gap-4 mt-8">
           {students.map((student) => (
-            <div key={student.email} className="flex flex-col justify-between">
+            <div key={student.email} className="flex flex-row justify-between">
               <span>{student.name}</span>
+
               <button
                 onClick={async () => {
                   const res = await fetch(
