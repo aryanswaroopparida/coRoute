@@ -22,7 +22,7 @@ const navItems = [
   // { label: "Dashboard", href: "/dashboard", icon: IconLayoutDashboard },
   { label: "Find Matches", href: "/dashboard", icon: IconMapPin },
   { label: "My Rides", href: "/dashboard/rides", icon: IconPlus },
-  { label: "Chat", href: "/dashboard/chat", icon: IconMessageCircle },
+  { label: "Chat", href: "/dashboard/my-chats", icon: IconMessageCircle },
   {
     label: "Change Password",
     href: "/dashboard/change-password",
