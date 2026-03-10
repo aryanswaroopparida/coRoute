@@ -27,18 +27,25 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Email validation
   useEffect(() => {
     if (!email) {
       setEmailError(null);
       return;
     }
 
+    const generalEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!generalEmailRegex.test(email)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+
     if (!nitwEmailRegex.test(email)) {
       setEmailError("Only NITW student emails are allowed");
-    } else {
-      setEmailError(null);
+      return;
     }
+
+    setEmailError(null);
   }, [email]);
 
   // Button state logic
@@ -217,7 +224,6 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
                   </LabelInputContainer>
                 </>
               )}
-
               {/* OTP STEP */}
               {!login && step === "otp" && (
                 <LabelInputContainer>
@@ -232,7 +238,6 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
                   />
                 </LabelInputContainer>
               )}
-
               {/* PASSWORD STEP */}
               {!login && step === "password" && (
                 <>
@@ -263,7 +268,6 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
                   )}
                 </>
               )}
-
               {/* LOGIN */}
               {login && (
                 <>
@@ -277,6 +281,10 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
                     />
                   </LabelInputContainer>
 
+                  {emailError && (
+                    <p className="text-sm text-red-500">{emailError}</p>
+                  )}
+
                   <LabelInputContainer>
                     <Label htmlFor="password">Password</Label>
                     <Input
@@ -288,7 +296,6 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
                   </LabelInputContainer>
                 </>
               )}
-
               <button
                 className="mt-4 w-full rounded-lg bg-linear-to-br from-blue-600 to-indigo-600 py-2.5 font-semibold text-white transition disabled:opacity-50"
                 type="submit"
@@ -304,7 +311,6 @@ export default function SignupFormDemo({ login = false }: { login: boolean }) {
                         ? "Verify OTP"
                         : "Create Account"}
               </button>
-
               {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
             </form>
           </div>
