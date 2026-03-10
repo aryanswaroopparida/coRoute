@@ -100,10 +100,12 @@ export default function DashboardPage() {
 
       const { lat, lng } = selectedLocation;
 
-      // Book slot
+      // 1️⃣ Add user to geo slot
       await fetch("/api/protected/geo/update", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           userId: email.toLowerCase(),
           latitude: lat,
@@ -112,29 +114,56 @@ export default function DashboardPage() {
         }),
       });
 
-      // Fetch nearby users
+      // 2️⃣ Find nearby users
       const res = await fetch(
         `/api/protected/geo/nearby?lat=${lat}&lng=${lng}&radius=${radius}&slot=${slotUnix}&genderFilter=${genderFilter}`,
       );
 
       const data = await res.json();
 
-      const filtered = data.users?.filter(
-        (user: any) => user.email.toLowerCase() !== email.toLowerCase(),
-      );
+      const filtered =
+        data.users?.filter(
+          (user: any) => user.email.toLowerCase() !== email.toLowerCase(),
+        ) || [];
 
-      // Map properly
-      const formatted: Student[] =
-        filtered?.map((user: any) => ({
-          email: user.email,
-          name: user.name,
-          destination: "Selected Destination",
-          distance: 0,
-        })) || [];
+      const formatted: Student[] = filtered.map((user: any) => ({
+        email: user.email,
+        name: user.name,
+        destination: "Selected Destination",
+        distance: 0,
+      }));
 
       setStudents(formatted);
+
+      // 3️⃣ Create / join group room
+      const participants = [
+        email.toLowerCase(),
+        ...formatted.map((u) => u.email.toLowerCase()),
+      ];
+
+      const roomRes = await fetch("/api/protected/chat/create-group", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          slot: data.matchedSlot || slotUnix,
+          participants,
+        }),
+      });
+
+      const roomData = await roomRes.json();
+
+      // 4️⃣ Store room id (optional)
+      const roomId = roomData.room._id;
+
+      console.log("Group Room:", roomId);
+
+      // Optional: auto redirect
+      // router.push(`/chat/${roomId}`);
     } catch (err) {
       console.error(err);
+      alert("Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -277,11 +306,32 @@ export default function DashboardPage() {
       {!loading && students.length > 0 && (
         <div className="grid gap-4 mt-8">
           {students.map((student) => (
-            <div
-              key={student.email}
-              className="p-4 rounded-xl border bg-white shadow-sm"
-            >
-              <h3 className="font-semibold">{student.name}</h3>
+            <div key={student.email} className="flex flex-col justify-between">
+              <span>{student.name}</span>
+              <button
+                onClick={async () => {
+                  const res = await fetch(
+                    "/api/protected/chat/create-personal",
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        userA: email,
+                        userB: student.email,
+                      }),
+                    },
+                  );
+
+                  const data = await res.json();
+
+                  window.location.href = `/chat/${data.room._id}`;
+                }}
+                className="mt-2 text-sm text-blue-600"
+              >
+                Chat privately
+              </button>
             </div>
           ))}
         </div>

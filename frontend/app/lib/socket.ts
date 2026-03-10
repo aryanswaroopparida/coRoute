@@ -13,12 +13,20 @@ export function initSocket(server: HTTPServer): IOServer {
   });
 
   io.on("connection", (socket) => {
+    console.log("User connected:", socket.id);
+
+    // Join chat room
     socket.on("join-room", (roomId: string) => {
       socket.join(roomId);
     });
 
-    socket.on("send-message", (data: { roomId: string; message: string }) => {
+    // Send message to room
+    socket.on("send-message", (data) => {
       io.to(data.roomId).emit("receive-message", data);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("User disconnected:", socket.id);
     });
   });
 

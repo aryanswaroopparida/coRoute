@@ -1,13 +1,12 @@
 import Room from "@/app/models/Room";
-import { NextRequest,NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const { participants, slot } = await req.json();
+  const { slot, participants } = await req.json();
 
   let room = await Room.findOne({
     type: "group",
     slot,
-    participants: { $all: participants },
   });
 
   if (!room) {
@@ -16,6 +15,13 @@ export async function POST(req: NextRequest) {
       slot,
       participants,
     });
+  } else {
+    await Room.updateOne(
+      { _id: room._id },
+      { $addToSet: { participants: { $each: participants } } },
+    );
+
+    room = await Room.findById(room._id);
   }
 
   return NextResponse.json({ room });
