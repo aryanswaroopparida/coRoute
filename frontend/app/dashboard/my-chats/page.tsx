@@ -53,26 +53,30 @@ export default function ChatsPage() {
         )}
 
         <div className="grid gap-4">
-          {groupChats.map((room) => (
-            <div
-              key={room._id}
-              className="border p-4 rounded-lg flex justify-between items-center"
-            >
-              <div>
-                <p className="font-semibold">Group Chat</p>
-                <p className="text-sm text-gray-500">
-                  Participants: {room.participants.length}
-                </p>
-              </div>
-
-              <button
-                onClick={() => (window.location.href = `/chat/${room._id}`)}
-                className="text-blue-600 text-sm"
+          {groupChats.map((room) =>
+            room.participants.length > 1 ? (
+              <div
+                key={room._id}
+                className="border p-4 rounded-lg flex justify-between items-center"
               >
-                Open
-              </button>
-            </div>
-          ))}
+                <div>
+                  <p className="font-semibold">Group Chat</p>
+                  <p className="text-sm text-gray-500">
+                    Participants: {room.participants.length}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() =>
+                    (window.location.href = `/dashboard/chat/${room._id}`)
+                  }
+                  className="text-blue-600 text-sm"
+                >
+                  Open
+                </button>
+              </div>
+            ) : null,
+          )}
         </div>
       </div>
 
@@ -98,7 +102,9 @@ export default function ChatsPage() {
               </div>
 
               <button
-                onClick={() => (window.location.href = `/chat/${room._id}`)}
+                onClick={() =>
+                  (window.location.href = `/dashboard/chat/${room._id}`)
+                }
                 className="text-blue-600 text-sm"
               >
                 Open
