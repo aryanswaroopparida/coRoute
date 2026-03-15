@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const { email, password } = await request.json();
+    console.log(email, " ", password);
 
     if (!email || !password) {
       return NextResponse.json(
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: "Invalid credentials" },
-        { status: 401 },
+        { status: 402 },
       );
     }
 

@@ -3,56 +3,82 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useParams } from "next/navigation";
+import { Send, Hash, UserCircle, MoreHorizontal, Loader2 } from "lucide-react";
 
 let socket: Socket | null = null;
 
+// Defining the shape of our message for better TypeScript support
 type Message = {
   roomId: string;
   message: string;
   sender: string;
+  timestamp: string;
 };
 
 export default function ChatPage() {
   const { roomId } = useParams();
-
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [email, setEmail] = useState("");
+  const [typingUser, setTypingUser] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Added loading state
 
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Fetch logged-in user (comes from middleware header)
   useEffect(() => {
-    async function getUser() {
-      const res = await fetch("/api/protected/user");
-      const data = await res.json();
-      setEmail(data.user.email);
-    }
+    // 1. Get User
+    fetch("/api/protected/user")
+      .then((res) => res.json())
+      .then((data) => setEmail(data.user.email));
 
-    getUser();
-  }, []);
-
-  // Socket connection
-  useEffect(() => {
+    // 2. Socket Setup
     socket = io("http://localhost:4000");
-
     socket.emit("join-room", roomId);
 
-    socket.off("receive-message");
+    // --- LOAD OLD MESSAGES ---
+    socket.on("load-messages", (history: Message[]) => {
+      setMessages(history);
+      setIsLoading(false); // Stop loading once history is in
+    });
 
     socket.on("receive-message", (msg: Message) => {
       setMessages((prev) => [...prev, msg]);
     });
 
+    socket.on("user-typing", (userEmail) => {
+      if (userEmail !== email) setTypingUser(userEmail.split("@")[0]);
+    });
+
+    socket.on("user-stop-typing", () => setTypingUser(null));
+
     return () => {
+      socket?.off("load-messages");
+      socket?.off("receive-message");
+      socket?.off("user-typing");
+      socket?.off("user-stop-typing");
       socket?.disconnect();
     };
-  }, [roomId]);
+  }, [roomId, email]);
 
-  // auto scroll
+  // Auto-scroll to bottom whenever messages change
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (!isLoading) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isLoading]);
+
+  const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(e.target.value);
+    if (!socket) return;
+
+    socket.emit("typing", { roomId, email });
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      socket?.emit("stop-typing", { roomId });
+    }, 2000);
+  };
 
   const sendMessage = () => {
     if (!socket || !message.trim() || !email) return;
@@ -61,65 +87,97 @@ export default function ChatPage() {
       roomId: roomId as string,
       message,
       sender: email,
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     };
 
     socket.emit("send-message", msg);
-
-    // show immediately for sender
+    socket.emit("stop-typing", { roomId });
     setMessages((prev) => [...prev, msg]);
-
     setMessage("");
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-xl font-semibold mb-4">Chat</h1>
+    <div className="flex flex-col h-[85vh] max-w-4xl mx-auto my-8 border border-slate-200 rounded-2xl shadow-xl bg-white overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-slate-100 bg-white flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
+            <Hash size={20} />
+          </div>
+          <h1 className="font-bold text-slate-800">{roomId}</h1>
+        </div>
+      </div>
 
-      {/* Chat box */}
-      <div className="h-[450px] overflow-y-auto border rounded-lg p-4 bg-gray-50">
-        {messages.map((m, i) => {
-          const isMe = m.sender === email;
-
-          return (
-            <div
-              key={i}
-              className={`flex mb-3 ${isMe ? "justify-end" : "justify-start"}`}
-            >
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
+            <Loader2 className="animate-spin" size={24} />
+            <p className="text-sm">Fetching chat history...</p>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-slate-400 text-sm italic">
+            No previous messages in this room.
+          </div>
+        ) : (
+          messages.map((m, i) => {
+            const isMe = m.sender === email;
+            return (
               <div
-                className={`px-4 py-2 rounded-lg max-w-[65%] shadow-sm ${
-                  isMe ? "bg-blue-500 text-white" : "bg-white border text-black"
-                }`}
+                key={i}
+                className={`flex ${isMe ? "justify-end" : "justify-start"}`}
               >
-                {!isMe && (
-                  <div className="text-xs text-gray-500 mb-1">{m.sender}</div>
-                )}
-                {m.message}
+                <div
+                  className={`flex flex-col max-w-[75%] ${isMe ? "items-end" : "items-start"}`}
+                >
+                  <div
+                    className={`px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
+                      isMe
+                        ? "bg-blue-600 text-white rounded-br-none"
+                        : "bg-white border text-slate-800 rounded-bl-none"
+                    }`}
+                  >
+                    {m.message}
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-1 px-1">
+                    {isMe ? "Sent" : m.sender.split("@")[0]} • {m.timestamp}
+                  </span>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
 
-        <div ref={bottomRef}></div>
+        {typingUser && (
+          <div className="flex items-center gap-2 text-slate-400 italic text-xs animate-pulse">
+            <MoreHorizontal size={16} />
+            <span>{typingUser} is typing...</span>
+          </div>
+        )}
+        <div ref={bottomRef} />
       </div>
 
       {/* Input */}
-      <div className="flex mt-4 gap-2">
-        <input
-          className="border rounded-lg p-3 flex-1"
-          placeholder="Type message..."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") sendMessage();
-          }}
-        />
-
-        <button
-          onClick={sendMessage}
-          className="bg-blue-500 text-white px-6 rounded-lg hover:bg-blue-600 transition"
-        >
-          Send
-        </button>
+      <div className="p-4 bg-white border-t">
+        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl">
+          <input
+            className="bg-transparent border-none focus:ring-0 flex-1 p-2 text-sm"
+            placeholder="Type a message..."
+            value={message}
+            onChange={handleTyping}
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={!message.trim()}
+            className="bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            <Send size={18} />
+          </button>
+        </div>
       </div>
     </div>
   );
