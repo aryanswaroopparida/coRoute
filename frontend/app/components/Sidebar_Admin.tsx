@@ -10,10 +10,9 @@ import {
   IconMapPin,
   IconMessageCircle,
   IconUser,
-  IconPlus,
-  IconSettings,
   IconLogout,
   IconLayoutSidebarRightCollapse,
+  IconSettings,
 } from "@tabler/icons-react";
 import { isMobile } from "@/app/lib/utils";
 import { useRouter } from "next/navigation";
@@ -21,12 +20,12 @@ import { useRouter } from "next/navigation";
 const navItems = [
   // { label: "Dashboard", href: "/dashboard", icon: IconLayoutDashboard },
   { label: "Find Matches", href: "/dashboard", icon: IconMapPin },
-  { label: "My Rides", href: "/dashboard/rides", icon: IconPlus },
+  { label: "Profile", href: "/dashboard/profile", icon: IconUser },
   { label: "Chat", href: "/dashboard/my-chats", icon: IconMessageCircle },
   {
     label: "Change Password",
     href: "/dashboard/change-password",
-    icon: IconUser,
+    icon: IconSettings,
   },
   // { label: "Settings", href: "/dashboard/settings", icon: IconSettings },
 ];
@@ -121,6 +120,7 @@ const Navigation = ({
 
 const SidebarHeader = () => {
   const [name, setName] = useState("");
+  const [profile, setProfile] = useState("");
   useEffect(() => {
     try {
       (async () => {
@@ -128,13 +128,18 @@ const SidebarHeader = () => {
         let jsonData = await res.json();
         console.log("jsonData :", jsonData);
         setName(jsonData.user.name);
+        setProfile(jsonData.user.profilepic);
       })();
     } catch (error) {}
   }, []);
   return (
     <div className="flex items-center space-x-3">
       <Image
-        src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1760&q=80" // replace with logged-in user image
+        src={
+          profile
+            ? profile
+            : "https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1760&q=80"
+        } // replace with logged-in user image
         alt="User Avatar"
         height={40}
         width={40}

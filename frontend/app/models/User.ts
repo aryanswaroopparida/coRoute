@@ -18,7 +18,6 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       match: [nitwEmailRegex, "Only NITW student emails are allowed"],
     },
-
     password: {
       type: String,
       required: [true, "Password is required"],
@@ -26,6 +25,9 @@ const UserSchema = new mongoose.Schema(
       // select: false,
     },
     gender: {
+      type: String,
+    },
+    profilepic: {
       type: String,
     },
   },
