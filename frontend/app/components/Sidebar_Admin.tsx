@@ -16,6 +16,7 @@ import {
 } from "@tabler/icons-react";
 import { isMobile } from "@/app/lib/utils";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 
 const navItems = [
   // { label: "Dashboard", href: "/dashboard", icon: IconLayoutDashboard },
@@ -30,6 +31,26 @@ const navItems = [
   // { label: "Settings", href: "/dashboard/settings", icon: IconSettings },
 ];
 
+function ThemeToggle() {
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
+
+  const current = theme === "system" ? resolvedTheme : theme;
+
+  return (
+    <button
+      onClick={() => setTheme(current === "dark" ? "light" : "dark")}
+      className="px-3 py-1 rounded-md bg-muted text-foreground border border-border"
+    >
+      {current === "dark" ? "🌙" : "☀️"}
+    </button>
+  );
+}
+
 export const Sidebar = () => {
   const router = useRouter();
   const [open, setOpen] = useState(isMobile() ? false : true);
@@ -43,7 +64,7 @@ export const Sidebar = () => {
             animate={{ x: 0 }}
             exit={{ x: -200 }}
             transition={{ duration: 0.2 }}
-            className="px-6 py-8 bg-white max-w-60 fixed lg:relative h-screen left-0 flex flex-col justify-between border-r"
+            className="px-6 py-8 max-w-60 fixed lg:relative h-screen left-0 flex flex-col justify-between border-r"
           >
             <div className="flex-1 overflow-auto">
               <SidebarHeader />
@@ -52,7 +73,7 @@ export const Sidebar = () => {
 
             {/* Logout Section */}
             <div
-              className="flex items-center space-x-2 text-sm text-red-500 cursor-pointer hover:bg-red-50 p-2 rounded-md"
+              className="flex items-center space-x-2 text-sm text-red-500 cursor-pointer p-2 rounded-md"
               onClick={async () => {
                 try {
                   await fetch("/api/protected/logout", {
@@ -68,16 +89,17 @@ export const Sidebar = () => {
               <IconLogout className="h-4 w-4" />
               <span>Logout</span>
             </div>
+            <ThemeToggle />
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Mobile Toggle */}
       <button
-        className="fixed lg:hidden bottom-4 right-4 h-10 w-10 border rounded-full bg-white shadow flex items-center justify-center z-50"
+        className="fixed lg:hidden bottom-4 right-4 h-10 w-10 border rounded-full shadow flex items-center justify-center z-50"
         onClick={() => setOpen(!open)}
       >
-        <IconLayoutSidebarRightCollapse className="h-5 w-5 text-black" />
+        <IconLayoutSidebarRightCollapse className="h-5 w-5 text-foreground" />
       </button>
     </>
   );
@@ -97,12 +119,11 @@ const Navigation = ({
         <Link
           key={item.href}
           href={item.href}
-          onClick={() => isMobile() && setOpen(false)}
           className={twMerge(
             "flex items-center space-x-3 py-2 px-3 rounded-lg text-sm transition",
             isActive(item.href)
               ? "bg-blue-50 text-blue-600 font-semibold"
-              : "hover:bg-gray-100 text-gray-700",
+              : "hover:bg-foreground hover:text-background",
           )}
         >
           <item.icon
@@ -147,7 +168,7 @@ const SidebarHeader = () => {
       />
       <div className="flex flex-col">
         <p className="font-semibold text-sm">{name}</p>
-        <p className="text-xs text-gray-500">NIT Warangal</p>
+        <p className="text-xs">NIT Warangal</p>
       </div>
     </div>
   );

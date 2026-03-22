@@ -120,15 +120,13 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto my-12 p-8 bg-white border border-slate-200 rounded-3xl shadow-sm">
-      <h1 className="text-2xl font-bold text-slate-800 mb-8 text-center">
-        My Profile
-      </h1>
+    <div className="max-w-2xl mx-auto my-12 p-8border rounded-3xl shadow-sm">
+      <h1 className="text-2xl font-bold mb-8 text-center">My Profile</h1>
 
       {/* --- Profile Photo Section --- */}
       <div className="flex flex-col items-center gap-6 mb-10">
         <div className="relative group">
-          <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-md bg-slate-50">
+          <div className="w-40 h-40 rounded-full overflow-hidden border-4  shadow-md">
             {profileUrl ? (
               <img
                 src={profileUrl}
@@ -136,7 +134,7 @@ export default function ProfilePage() {
                 alt="Profile"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-slate-300">
+              <div className="w-full h-full flex items-center justify-center">
                 <User size={64} />
               </div>
             )}
@@ -157,10 +155,8 @@ export default function ProfilePage() {
       </div>
 
       {/* --- Profile Details Section --- */}
-      <div className="space-y-6 border-t pt-8 bg-slate-50/50 p-6 rounded-2xl">
-        <h2 className="text-lg font-semibold text-slate-700 mb-4">
-          Account Details
-        </h2>
+      <div className="space-y-6 pt-8 p-6 rounded-2xl">
+        <h2 className="text-lg font-semibol mb-4">Account Details</h2>
 
         <div className="grid grid-cols-1 gap-5">
           {/* Name Display */}

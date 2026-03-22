@@ -127,8 +127,12 @@
 html {
   scroll-behavior: smooth;
   overscroll-behavior: none;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
 }
 
 body {
   overscroll-behavior: none;
+  @apply bg-background text-foreground;
 }

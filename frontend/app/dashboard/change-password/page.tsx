@@ -65,11 +65,9 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-100 dark:bg-black px-4">
-      <div className="w-full max-w-md bg-white dark:bg-neutral-900 p-8 rounded-2xl shadow-xl">
-        <h2 className="text-2xl font-bold mb-6 text-neutral-800 dark:text-white">
-          Change Password
-        </h2>
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="w-full max-w-md p-8 rounded-2xl shadow-xl">
+        <h2 className="text-2xl font-bold mb-6">Change Password</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

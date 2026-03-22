@@ -1,5 +1,8 @@
+"use client";
+
 import { Sidebar } from "@/app/components/Sidebar_Admin";
-// import { Footer } from "@/app/components/Footer";
+
+
 
 export default function RootLayout({
   children,
@@ -7,13 +10,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex">
+    <div className="flex bg-background text-foreground min-h-screen">
       <Sidebar />
-      <div className="lg:pl-2 lg:pt-2 bg-gray-100 flex-1 overflow-y-auto">
-        <div className="flex-1 bg-white min-h-screen lg:rounded-tl-xl border border-transparent lg:border-neutral-200 overflow-y-scroll max-h-screen">
-          {children}
-          {/* <Footer /> */}
-        </div>
+      {/* Main Content */}
+      <div className="flex-1 bg-card min-h-screen lg:rounded-tl-xl border border-border overflow-y-scroll max-h-screen">
+        {children}
       </div>
     </div>
   );

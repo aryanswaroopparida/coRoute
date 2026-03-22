@@ -127,7 +127,7 @@ export const LoaderThree = () => {
 
 export const LoaderFour = ({ text = "Loading..." }: { text?: string }) => {
   return (
-    <div className="relative font-bold text-black perspective:1000px dark:text-white">
+    <div className="relative font-bold text-foreground perspective:1000px dark:text-white">
       <motion.span
         animate={{
           // FIX 2: Changed 'skew' to 'skewX'

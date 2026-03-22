@@ -100,26 +100,26 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[85vh] max-w-4xl mx-auto my-8 border border-slate-200 rounded-2xl shadow-xl bg-white overflow-hidden">
+    <div className="flex flex-col h-[85vh] max-w-4xl mx-auto my-8  rounded-2xl shadow-xl overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-100 bg-white flex items-center justify-between">
+      <div className="px-6 py-4  flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
             <Hash size={20} />
           </div>
-          <h1 className="font-bold text-slate-800">{roomId}</h1>
+          <h1 className="font-bold">{roomId}</h1>
         </div>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 ">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
+          <div className="flex flex-col items-center justify-center h-full gap-2">
             <Loader2 className="animate-spin" size={24} />
             <p className="text-sm">Fetching chat history...</p>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-slate-400 text-sm italic">
+          <div className="flex items-center justify-center h-full text-sm italic">
             No previous messages in this room.
           </div>
         ) : (
@@ -161,8 +161,8 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <div className="p-4 bg-white border-t">
-        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl">
+      <div className="p-4 border-t">
+        <div className="flex items-center gap-2 p-1.5 rounded-xl">
           <input
             className="bg-transparent border-none focus:ring-0 flex-1 p-2 text-sm"
             placeholder="Type a message..."
