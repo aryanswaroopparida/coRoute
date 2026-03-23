@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { Container } from "@/app/components/Container";
 import { Heading } from "@/app/components/Heading";
+import { tsToIST12hr } from "@/app/utils/date";
 
 type Room = {
   _id: string;
   type: "group" | "personal";
-  slot?: number;
+  slot: number;
   participants: string[];
   createdAt: string;
 };
@@ -60,7 +61,7 @@ export default function ChatsPage() {
                 className="border p-4 rounded-lg flex justify-between items-center"
               >
                 <div>
-                  <p className="font-semibold">Group Chat</p>
+                  <p className="font-semibold">{tsToIST12hr(room.slot)}</p>
                   <p className="text-sm text-gray-500">
                     Participants: {room.participants.length}
                   </p>
@@ -95,10 +96,8 @@ export default function ChatsPage() {
               className="border p-4 rounded-lg flex justify-between items-center"
             >
               <div>
-                <p className="font-semibold">Personal Chat</p>
-                <p className="text-sm text-gray-500">
-                  {room.participants.join(", ")}
-                </p>
+                <p className="font-semibold">{room.participants.join(", ")}</p>
+                <p className="text-sm text-gray-500">{}</p>
               </div>
 
               <button
