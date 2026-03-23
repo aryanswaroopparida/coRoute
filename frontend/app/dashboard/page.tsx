@@ -411,7 +411,7 @@ export default function DashboardPage() {
             </div>
             <button
               onClick={() => {
-                window.location.href = `/chat/${groupMatch._id}`;
+                window.location.href = `/dashboard/chat/${groupMatch._id}`;
               }}
               className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-indigo-500/30 active:scale-95"
             >
@@ -457,7 +457,7 @@ export default function DashboardPage() {
                         },
                       );
                       const data = await res.json();
-                      window.location.href = `/chat/${data.room._id}`;
+                      window.location.href = `/dashboard/chat/${data.room._id}`;
                     }}
                     className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 px-3.5 py-2 rounded-lg transition-all flex-shrink-0"
                   >
