@@ -333,7 +333,7 @@ export default function ChatPage() {
                   </div>
 
                   <span className="text-[10px] text-slate-400 mt-1 px-1">
-                    {isMe ? "Sent" : senderName} • {m.timestamp}
+                    {senderName} • {m.timestamp}
                   </span>
                 </div>
               </div>
