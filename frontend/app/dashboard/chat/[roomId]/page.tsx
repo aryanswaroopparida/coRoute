@@ -118,6 +118,7 @@ export default function ChatPage() {
       .then((data) => {
         setEmail(data.user.email);
         emailRef.current = data.user.email; // ✅ keep ref in sync
+        resolveName(data.user.email); // ✅ keep ref in sync
       });
 
     socket = io("http://localhost:4000");
