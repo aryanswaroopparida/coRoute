@@ -118,12 +118,16 @@ export default function DashboardPage() {
         data.users?.filter(
           (user: any) => user.email.toLowerCase() !== email.toLowerCase(),
         ) || [];
-      const formatted: Student[] = filtered.map((user: any) => ({
+
+      // Map properly
+      const formatted: Student[] =
+      filtered?.map((user: any) => ({
         email: user.email,
         name: user.name,
         destination: "Selected Destination",
         distance: 0,
-      }));
+      })) || [];
+
 
       setStudents(formatted);
 

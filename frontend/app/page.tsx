@@ -74,37 +74,37 @@ export default function Home() {
     {
       quote:
         "Finding someone going from campus to Warangal railway station used to be a struggle, especially during holidays. With CoRoute, I matched with two seniors heading the same way and split the cab fare easily.",
-      name: "Ananya Reddy",
+      name: "Ganesh Revanth",
       designation: "B.Tech CSE, NIT Warangal",
-      src: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=3540&auto=format&fit=crop",
+      src: "./ganesh.jpg",
     },
     {
       quote:
         "Auto fares near the campus gate can be unpredictable. Now I just check CoRoute and usually find someone going towards Hanamkonda or Kazipet. It’s convenient and way more affordable.",
-      name: "Rahul Kumar",
-      designation: "B.Tech ECE, NIT Warangal",
-      src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=3540&auto=format&fit=crop",
+      name: "N. Sriharsha",
+      designation: "B.Tech CSE, NIT Warangal",
+      src: "./harsha.jpg",
     },
     {
       quote:
         "During fest season and exam breaks, transport gets chaotic. CoRoute helped me coordinate rides with hostel mates and even meet students from other branches.",
-      name: "Sowmya Iyer",
-      designation: "M.Tech Mechanical, NIT Warangal",
-      src: "https://images.unsplash.com/photo-1623582854588-d60de57fa33f?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      name: "Atulya Prashad",
+      designation: "B.Tech CSE, NIT Warangal",
+      src: "./atulya.jpg",
     },
     {
       quote:
         "I use CoRoute whenever I travel to Hyderabad airport. Sharing the ride from campus makes long-distance travel cheaper and less stressful.",
-      name: "Vikram Singh",
-      designation: "B.Tech Civil, NIT Warangal",
-      src: "https://images.unsplash.com/photo-1615109398623-88346a601842?q=80&w=3540&auto=format&fit=crop",
+      name: "Aryan Swaroop",
+      designation: "B.Tech CSE, NIT Warangal",
+      src: "./aryan.jpg",
     },
     {
       quote:
         "It’s not just about saving money — it feels safer traveling with fellow NITW students. The campus-based matching makes it trustworthy.",
-      name: "Harini Patel",
-      designation: "MBA, NIT Warangal",
-      src: "https://images.unsplash.com/photo-1624561172888-ac93c696e10c?q=80&w=3540&auto=format&fit=crop",
+      name: "Manav Tejani",
+      designation: "B.Tech CSE, NIT Warangal",
+      src: "./manav.jpg",
     },
   ];
 

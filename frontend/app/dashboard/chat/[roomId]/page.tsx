@@ -60,8 +60,9 @@ export default function ChatPage() {
       });
 
       const data = await res.json();
+      console.log(data,"Aryan");
 
-      const name = data.name || email.split("@")[0];
+      const name = data.user.name || email.split("@")[0];
 
       setUserMap((prev) => ({
         ...prev,
