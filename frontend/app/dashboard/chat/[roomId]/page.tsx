@@ -3,83 +3,150 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useParams } from "next/navigation";
-import { Send, Hash, UserCircle, MoreHorizontal, Loader2 } from "lucide-react";
+import { Send, Hash, MoreHorizontal, Loader2 } from "lucide-react";
 
 let socket: Socket | null = null;
 
-// Defining the shape of our message for better TypeScript support
 type Message = {
   roomId: string;
   message: string;
-  sender: string;
+  sender: string; // email
   timestamp: string;
 };
 
 export default function ChatPage() {
   const { roomId } = useParams();
+
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [email, setEmail] = useState("");
+
   const [typingUser, setTypingUser] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Added loading state
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 🔥 Email → Name cache
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // ✅ Ref so socket listeners always read the latest email value
+  const emailRef = useRef<string>("");
+
+  // ===============================
+  // 🔹 Resolve name from API (cached)
+  // ===============================
+  const resolveName = async (email: string) => {
+    if (!email) return "Unknown";
+
+    // already cached
+    if (userMap[email]) return userMap[email];
+
+    try {
+      const res = await fetch("/api/protected/user", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      const name = data.name || email.split("@")[0];
+
+      setUserMap((prev) => ({
+        ...prev,
+        [email]: name,
+      }));
+
+      return name;
+    } catch {
+      return email.split("@")[0];
+    }
+  };
+
+  // ===============================
+  // 🔹 Initial Setup
+  // ===============================
   useEffect(() => {
-    // 1. Get User
+    // Get logged-in user
     fetch("/api/protected/user")
       .then((res) => res.json())
-      .then((data) => setEmail(data.user.email));
+      .then((data) => {
+        setEmail(data.user.email);
+        emailRef.current = data.user.email; // ✅ keep ref in sync
+      });
 
-    // 2. Socket Setup
     socket = io("http://localhost:4000");
     socket.emit("join-room", roomId);
 
-    // --- LOAD OLD MESSAGES ---
+    // Load messages
     socket.on("load-messages", (history: Message[]) => {
       setMessages(history);
-      setIsLoading(false); // Stop loading once history is in
+      setIsLoading(false);
     });
 
     socket.on("receive-message", (msg: Message) => {
-      setMessages((prev) => [...prev, msg]);
+      // ✅ Use ref (not state) so this always has the current email
+      if (msg.sender !== emailRef.current) {
+        setMessages((prev) => [...prev, msg]);
+      }
     });
 
-    socket.on("user-typing", (userEmail) => {
-      if (userEmail !== email) setTypingUser(userEmail.split("@")[0]);
+    // 🔥 Typing with name resolution
+    socket.on("user-typing", async (userEmail) => {
+      if (userEmail !== emailRef.current) {
+        const name = await resolveName(userEmail);
+        setTypingUser(name);
+      }
     });
 
     socket.on("user-stop-typing", () => setTypingUser(null));
 
     return () => {
-      socket?.off("load-messages");
-      socket?.off("receive-message");
-      socket?.off("user-typing");
-      socket?.off("user-stop-typing");
       socket?.disconnect();
     };
-  }, [roomId, email]);
+  }, [roomId]);
 
-  // Auto-scroll to bottom whenever messages change
+  // ===============================
+  // 🔹 Resolve names for messages
+  // ===============================
+  useEffect(() => {
+    const fetchNames = async () => {
+      const uniqueEmails = [...new Set(messages.map((m) => m.sender))];
+      await Promise.all(uniqueEmails.map(resolveName));
+    };
+
+    if (messages.length) fetchNames();
+  }, [messages]);
+
+  // ===============================
+  // 🔹 Auto Scroll
+  // ===============================
   useEffect(() => {
     if (!isLoading) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isLoading]);
 
+  // ===============================
+  // 🔹 Typing Handler
+  // ===============================
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMessage(e.target.value);
+
     if (!socket) return;
 
     socket.emit("typing", { roomId, email });
 
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
     typingTimeoutRef.current = setTimeout(() => {
       socket?.emit("stop-typing", { roomId });
     }, 2000);
   };
 
+  // ===============================
+  // 🔹 Send Message
+  // ===============================
   const sendMessage = () => {
     if (!socket || !message.trim() || !email) return;
 
@@ -95,14 +162,18 @@ export default function ChatPage() {
 
     socket.emit("send-message", msg);
     socket.emit("stop-typing", { roomId });
+
     setMessages((prev) => [...prev, msg]);
     setMessage("");
   };
 
+  // ===============================
+  // 🔹 Render
+  // ===============================
   return (
-    <div className="flex flex-col h-[85vh] max-w-4xl mx-auto my-8  rounded-2xl shadow-xl overflow-hidden dark:bg-white/5">
+    <div className="flex flex-col h-[85vh] max-w-4xl mx-auto my-8 rounded-2xl shadow-xl overflow-hidden dark:bg-white/5">
       {/* Header */}
-      <div className="px-6 py-4  flex items-center justify-between">
+      <div className="px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
             <Hash size={20} />
@@ -111,8 +182,8 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 ">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-2">
             <Loader2 className="animate-spin" size={24} />
@@ -120,18 +191,22 @@ export default function ChatPage() {
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-sm italic">
-            No previous messages in this room.
+            No previous messages.
           </div>
         ) : (
           messages.map((m, i) => {
             const isMe = m.sender === email;
+            const senderName = userMap[m.sender] || m.sender.split("@")[0];
+
             return (
               <div
                 key={i}
                 className={`flex ${isMe ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`flex flex-col max-w-[75%] ${isMe ? "items-end" : "items-start"}`}
+                  className={`flex flex-col max-w-[75%] ${
+                    isMe ? "items-end" : "items-start"
+                  }`}
                 >
                   <div
                     className={`px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
@@ -142,8 +217,9 @@ export default function ChatPage() {
                   >
                     {m.message}
                   </div>
+
                   <span className="text-[10px] text-slate-400 mt-1 px-1">
-                    {isMe ? "Sent" : m.sender.split("@")[0]} • {m.timestamp}
+                    {isMe ? "Sent" : senderName} • {m.timestamp}
                   </span>
                 </div>
               </div>
@@ -151,12 +227,14 @@ export default function ChatPage() {
           })
         )}
 
+        {/* Typing */}
         {typingUser && (
           <div className="flex items-center gap-2 text-slate-400 italic text-xs animate-pulse">
             <MoreHorizontal size={16} />
             <span>{typingUser} is typing...</span>
           </div>
         )}
+
         <div ref={bottomRef} />
       </div>
 
@@ -170,10 +248,11 @@ export default function ChatPage() {
             onChange={handleTyping}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           />
+
           <button
             onClick={sendMessage}
             disabled={!message.trim()}
-            className="bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
             <Send size={18} />
           </button>
