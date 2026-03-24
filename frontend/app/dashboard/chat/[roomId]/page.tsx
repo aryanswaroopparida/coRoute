@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useParams } from "next/navigation";
-import { Send, Hash, MoreHorizontal, Loader2 } from "lucide-react";
+import { Send, Hash, MoreHorizontal, Loader2, Users, X } from "lucide-react";
 
 let socket: Socket | null = null;
 
@@ -12,6 +12,11 @@ type Message = {
   message: string;
   sender: string; // email
   timestamp: string;
+};
+
+type Participant = {
+  email: string;
+  name: string;
 };
 
 export default function ChatPage() {
@@ -27,8 +32,14 @@ export default function ChatPage() {
   // 🔥 Email → Name cache
   const [userMap, setUserMap] = useState<Record<string, string>>({});
 
+  // ✅ Room info
+  const [roomName, setRoomName] = useState<string>("");
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [showParticipants, setShowParticipants] = useState(false);
+
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   // ✅ Ref so socket listeners always read the latest email value
   const emailRef = useRef<string>("");
@@ -62,6 +73,39 @@ export default function ChatPage() {
       return email.split("@")[0];
     }
   };
+
+  // ===============================
+  // 🔹 Fetch room info (name + participants)
+  // ===============================
+  useEffect(() => {
+    if (!roomId) return;
+
+    fetch(`/api/protected/room/${roomId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setRoomName(data.name || (roomId as string));
+        setParticipants(data.participants || []);
+      })
+      .catch(() => {
+        setRoomName(roomId as string);
+      });
+  }, [roomId]);
+
+  // ===============================
+  // 🔹 Close popover on outside click
+  // ===============================
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node)
+      ) {
+        setShowParticipants(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // ===============================
   // 🔹 Initial Setup
@@ -178,7 +222,77 @@ export default function ChatPage() {
           <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
             <Hash size={20} />
           </div>
-          <h1 className="font-bold">{roomId}</h1>
+          <h1 className="font-bold">{roomName || roomId}</h1>
+        </div>
+
+        {/* Participants button */}
+        <div className="relative" ref={popoverRef}>
+          <button
+            onClick={() => setShowParticipants((prev) => !prev)}
+            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10"
+          >
+            <Users size={16} />
+            <span>{participants.length}</span>
+          </button>
+
+          {/* Participants popover */}
+          {showParticipants && (
+            <div className="absolute right-0 top-10 z-50 w-60 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Participants
+                </span>
+                <button
+                  onClick={() => setShowParticipants(false)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              <ul className="py-2 max-h-60 overflow-y-auto">
+                {participants.length === 0 ? (
+                  <li className="px-4 py-2 text-sm text-slate-400 italic">
+                    No participants found
+                  </li>
+                ) : (
+                  participants.map((p) => {
+                    const isMe = p.email === email;
+                    const initials = p.name
+                      .split(" ")
+                      .map((w) => w[0])
+                      .join("")
+                      .toUpperCase()
+                      .slice(0, 2);
+
+                    return (
+                      <li
+                        key={p.email}
+                        className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5"
+                      >
+                        <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                          {initials}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
+                            {p.name}
+                            {isMe && (
+                              <span className="ml-1 text-[10px] text-slate-400">
+                                (you)
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-[11px] text-slate-400 truncate">
+                            {p.email}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
 
