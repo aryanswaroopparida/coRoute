@@ -73,11 +73,11 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-export async function OPTIONS(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const { email } = await request.json();
-    const user = await User.findOne(email);
+    const user = await User.findOne({ email });
     return NextResponse.json({ user });
   } catch (error) {
     console.error(error);
