@@ -123,9 +123,13 @@ export default function ChatPage() {
     socket.emit("join-room", roomId);
 
     // Load messages
-    socket.on("load-messages", (history: Message[]) => {
+    socket.on("load-messages", async (history: Message[]) => {
       setMessages(history);
       setIsLoading(false);
+
+      // ✅ Eagerly resolve all sender names before first render
+      const uniqueEmails = [...new Set(history.map((m) => m.sender))];
+      await Promise.all(uniqueEmails.map(resolveName));
     });
 
     socket.on("receive-message", (msg: Message) => {
@@ -149,18 +153,6 @@ export default function ChatPage() {
       socket?.disconnect();
     };
   }, [roomId]);
-
-  // ===============================
-  // 🔹 Resolve names for messages
-  // ===============================
-  useEffect(() => {
-    const fetchNames = async () => {
-      const uniqueEmails = [...new Set(messages.map((m) => m.sender))];
-      await Promise.all(uniqueEmails.map(resolveName));
-    };
-
-    if (messages.length) fetchNames();
-  }, [messages]);
 
   // ===============================
   // 🔹 Auto Scroll
